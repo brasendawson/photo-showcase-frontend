@@ -6,9 +6,37 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw==" crossorigin="anonymous" referrerpolicy="no-referrer" />
 		<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script>
+			tailwind.config = {
+				theme: {
+					extend: {
+						colors: {
+							primary: '#e67e22',
+							'primary-dark': '#d35400',
+							'text-dark': '#333',
+							'text-light': '#555',
+							'text-muted': '#777',
+							'bg-light': '#f9f9f9',
+							'bg-lighter': '#f5f5f5',
+						},
+						fontFamily: {
+							'playfair': ['"Playfair Display"', 'serif'],
+						},
+						minHeight: {
+							'600': '600px',
+						},
+						boxShadow: {
+							'card': '0 5px 15px rgba(0, 0, 0, 0.05)',
+							'image': '0 5px 15px rgba(0, 0, 0, 0.1)',
+						},
+					},
+				}
+			}
+		</script>
 		%sveltekit.head%
 	</head>
-	<body data-sveltekit-preload-data="hover">
+	<body data-sveltekit-preload-data="hover" class="font-playfair">
 		<div style="display: contents">%sveltekit.body%</div>
 	</body>
 </html>

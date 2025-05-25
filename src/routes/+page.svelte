@@ -28,7 +28,7 @@
     { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
   ];
   
-  // Sample services data
+  // Sample services data with shorter descriptions
   const services = [
     {
       title: "Wedding Photography",
@@ -74,119 +74,120 @@
 </svelte:head>
 
 <!-- Hero Section -->
-<section class="hero">
-  <div class="hero-content">
-    <h1>Capturing Life's Beautiful Moments</h1>
-    <p>Professional photography services that tell your unique story</p>
-    <div class="hero-buttons">
-      <a href="/gallery" class="btn btn-primary">View Gallery</a>
-      <a href="/book" class="btn btn-secondary">Book a Session</a>
+<section class="h-screen min-h-[600px] bg-cover bg-center bg-fixed flex items-center justify-center text-center text-white mt-0 pt-0" style="background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://res.cloudinary.com/dornqaxya/image/upload/photo-showcase/ew8spazgxat0rr0mjxta.png');">
+  <div class="max-w-3xl px-8 pt-12 mt-8">
+    <h1 class="text-5xl md:text-6xl mb-4 font-bold drop-shadow-lg">Capturing Life's Beautiful Moments</h1>
+    <p class="text-xl md:text-2xl mb-8 drop-shadow-md">Professional photography services that tell your unique story</p>
+    <div class="flex flex-col md:flex-row gap-4 justify-center">
+      <a href="/gallery" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer bg-primary text-white hover:bg-primary-dark">View Gallery</a>
+      <a href="/book" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer bg-transparent text-white border-2 border-white hover:bg-white/10">Book a Session</a>
     </div>
   </div>
 </section>
 
 <!-- About Section -->
-<section class="about">
-  <div class="container">
-    <div class="about-content">
-      <div class="about-text">
-        <h2>About Capture Moments</h2>
-        <p>We are passionate about freezing time through our lenses. With years of experience and a creative eye, we transform ordinary moments into extraordinary memories.</p>
-        <p>Our approach combines technical expertise with artistic vision to deliver photographs that you'll cherish for a lifetime.</p>
-        <a href="/services" class="btn btn-outline">Our Approach</a>
+<section class="py-20 bg-bg-light">
+  <div class="container max-w-7xl mx-auto px-8">
+    <div class="flex flex-col md:flex-row items-center gap-16">
+      <div class="flex-1 md:order-1 order-2">
+        <h2 class="text-4xl mb-6 text-text-dark md:text-left text-center">About Capture Moments</h2>
+        <p class="mb-6 leading-relaxed text-text-light">We are passionate about freezing time through our lenses. With years of experience and a creative eye, we transform ordinary moments into extraordinary memories.</p>
+        <p class="mb-6 leading-relaxed text-text-light">Our approach combines technical expertise with artistic vision to deliver photographs that you'll cherish for a lifetime.</p>
+        <div class="md:text-left text-center">
+          <a href="/services" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer text-primary border-2 border-primary bg-transparent hover:bg-primary hover:text-white">Our Approach</a>
+        </div>
       </div>
-      <div class="about-image">
-        <img src="https://source.unsplash.com/random/600x800?photographer" alt="Photographer at work" />
+      <div class="flex-1 md:order-2 order-1">
+        <img src="https://source.unsplash.com/random/600x800?photographer" alt="Photographer at work" class="w-full h-auto rounded-lg shadow-image" />
       </div>
     </div>
   </div>
 </section>
 
 <!-- Services Section -->
-<section class="services">
-  <div class="container">
-    <h2>Our Services</h2>
-    <p class="section-subtitle">Professional photography for all your special moments</p>
+<section class="py-20 bg-white">
+  <div class="container max-w-7xl mx-auto px-8">
+    <h2 class="text-4xl text-center mb-1 text-text-dark">Our Services</h2>
+    <p class="text-center text-lg text-text-muted mb-12">Professional photography for all your special moments</p>
     
-    <div class="services-grid">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 mb-12">
       {#each services as service}
-        <div class="service-card">
-          <div class="service-icon">
+        <div class="bg-white p-8 rounded-lg shadow-card text-center transition-transform duration-300 hover:-translate-y-2 h-full flex flex-col justify-center items-center">
+          <div class="text-5xl text-primary mb-6">
             <i class="fas {service.icon}"></i>
           </div>
-          <h3>{service.title}</h3>
-          <p>{service.description}</p>
+          <h3 class="text-2xl mb-4 text-text-dark">{service.title}</h3>
+          <p class="text-text-light leading-relaxed">{service.description}</p>
         </div>
       {/each}
     </div>
     
-    <div class="services-cta">
-      <a href="/services" class="btn btn-primary">View All Services</a>
+    <div class="text-center">
+      <a href="/services" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer bg-primary text-white hover:bg-primary-dark">View All Services</a>
     </div>
   </div>
 </section>
 
 <!-- Gallery Preview Section -->
-<section class="gallery-preview">
-  <div class="container">
-    <h2>Featured Work</h2>
-    <p class="section-subtitle">A glimpse of our photography portfolio</p>
+<section class="py-20 bg-bg-lighter">
+  <div class="container max-w-7xl mx-auto px-8">
+    <h2 class="text-4xl text-center mb-1 text-text-dark">Featured Work</h2>
+    <p class="text-center text-lg text-text-muted mb-12">A glimpse of our photography portfolio</p>
     
-    <div class="gallery-grid">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
       {#each galleryPreview as image, i}
-        <div class="gallery-item">
-          <img src={image.src} alt={image.alt} loading="lazy" />
-          <div class="gallery-overlay">
+        <div class="relative overflow-hidden rounded-lg h-[300px] group">
+          <img src={image.src} alt={image.alt} loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+          <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-4 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
             <span>{image.category}</span>
           </div>
         </div>
       {/each}
     </div>
     
-    <div class="gallery-cta">
-      <a href="/gallery" class="btn btn-primary">View Full Gallery</a>
+    <div class="text-center">
+      <a href="/gallery" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer bg-primary text-white hover:bg-primary-dark">View Full Gallery</a>
     </div>
   </div>
 </section>
 
 <!-- Testimonials Section -->
-<section class="testimonials">
-  <div class="container">
-    <h2>Client Testimonials</h2>
-    <p class="section-subtitle">What our clients say about us</p>
+<section class="py-20 bg-white">
+  <div class="container max-w-7xl mx-auto px-8">
+    <h2 class="text-4xl text-center mb-1 text-text-dark">Client Testimonials</h2>
+    <p class="text-center text-lg text-text-muted mb-12">What our clients say about us</p>
     
-    <div class="testimonial-slider">
-      <button class="slider-arrow prev" on:click={prevTestimonial} aria-label="Previous testimonial">
+    <div class="relative flex items-center max-w-4xl mx-auto">
+      <button class="bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center border-none cursor-pointer z-10 transition-colors hover:bg-primary-dark" on:click={prevTestimonial} aria-label="Previous testimonial">
         <i class="fas fa-chevron-left"></i>
       </button>
       
-      <div class="testimonial-container">
+      <div class="relative flex-1 overflow-hidden h-[300px]">
         {#each testimonials as testimonial, i}
-          <div class="testimonial" class:active={i === currentTestimonialIndex}>
-            <div class="testimonial-content">
-              <div class="quote-icon">
+          <div class={`absolute top-0 left-0 w-full h-full flex items-center justify-center transition-opacity duration-500 ${i === currentTestimonialIndex ? 'opacity-100' : 'opacity-0'}`}>
+            <div class="bg-white p-8 rounded-lg shadow-card text-center max-w-xl">
+              <div class="text-4xl text-primary mb-4">
                 <i class="fas fa-quote-left"></i>
               </div>
-              <p class="quote-text">{testimonial.quote}</p>
-              <div class="testimonial-author">
-                <img src={testimonial.image} alt={testimonial.name} />
-                <span>{testimonial.name}</span>
+              <p class="text-lg leading-relaxed text-text-light italic mb-6">{testimonial.quote}</p>
+              <div class="flex items-center justify-center gap-4">
+                <img src={testimonial.image} alt={testimonial.name} class="w-16 h-16 rounded-full object-cover" />
+                <span class="font-semibold text-text-dark">{testimonial.name}</span>
               </div>
             </div>
           </div>
         {/each}
       </div>
       
-      <button class="slider-arrow next" on:click={nextTestimonial} aria-label="Next testimonial">
+      <button class="bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center border-none cursor-pointer z-10 transition-colors hover:bg-primary-dark" on:click={nextTestimonial} aria-label="Next testimonial">
         <i class="fas fa-chevron-right"></i>
       </button>
     </div>
     
-    <div class="testimonial-indicators">
+    <div class="flex justify-center gap-2 mt-8">
       {#each testimonials as _, i}
         <button 
-          class="indicator" 
-          class:active={i === currentTestimonialIndex} 
+          class={`w-3 h-3 rounded-full border-none cursor-pointer transition-colors ${i === currentTestimonialIndex ? 'bg-primary' : 'bg-gray-300'}`}
           on:click={() => currentTestimonialIndex = i}
           aria-label={`Go to testimonial ${i + 1}`}
         ></button>
@@ -196,59 +197,17 @@
 </section>
 
 <!-- Call to Action Section -->
-<section class="cta">
-  <div class="container">
-    <h2>Ready to Book Your Session?</h2>
-    <p>Let's create beautiful memories together</p>
-    <a href="/book" class="btn btn-large">Book Now</a>
+<section class="py-20 bg-cover bg-center text-white text-center" style="background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://source.unsplash.com/random/1920x1080?camera');">
+  <div class="container max-w-7xl mx-auto px-8">
+    <h2 class="text-4xl text-white mb-4">Ready to Book Your Session?</h2>
+    <p class="text-xl mb-8">Let's create beautiful memories together</p>
+    <a href="/book" class="inline-block py-4 px-10 text-lg rounded font-semibold transition-all duration-300 cursor-pointer bg-primary text-white hover:bg-primary-dark">Book Now</a>
   </div>
 </section>
 
 <style>
   :global(body) {
     font-family: 'Playfair Display', serif;
-  }
-  
-  /* Hero Section */
-  .hero {
-    height: 100vh;
-    min-height: 600px;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)), url('https://source.unsplash.com/random/1920x1080?photography');
-    background-size: cover;
-    background-position: center;
-    background-attachment: fixed;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    text-align: center;
-    color: white;
-    margin-top: 0;
-    padding-top: 0;
-  }
-  
-  .hero-content {
-    max-width: 800px;
-    padding: 3rem 2rem 0 2rem; /* Increased top padding to create more space from navbar */
-    margin-top: 2rem; /* Add margin to push content down a bit */
-  }
-  
-  .hero h1 {
-    font-size: 3.5rem;
-    margin-bottom: 1rem;
-    font-weight: 700;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
-  }
-  
-  .hero p {
-    font-size: 1.5rem;
-    margin-bottom: 2rem;
-    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);
-  }
-  
-  .hero-buttons {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
   }
   
   /* Button Styles */
@@ -297,19 +256,8 @@
     font-size: 1.2rem;
   }
   
-  /* Container */
-  .container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 2rem;
-  }
-  
   /* Section Styles */
-  section {
-    padding: 5rem 0;
-  }
-  
-  h2 {
+  .section-title {
     font-size: 2.5rem;
     text-align: center;
     margin-bottom: 0.5rem;
@@ -323,319 +271,8 @@
     margin-bottom: 3rem;
   }
   
-  /* About Section */
-  .about {
-    background-color: #f9f9f9;
-  }
-  
-  .about-content {
-    display: flex;
-    align-items: center;
-    gap: 4rem;
-  }
-  
-  .about-text {
-    flex: 1;
-  }
-  
-  .about-text h2 {
-    text-align: left;
-    margin-bottom: 1.5rem;
-  }
-  
-  .about-text p {
-    margin-bottom: 1.5rem;
-    line-height: 1.6;
-    color: #555;
-  }
-  
-  .about-image {
-    flex: 1;
-    position: relative;
-  }
-  
-  .about-image img {
-    width: 100%;
-    height: auto;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  }
-  
-  /* Services Section */
-  .services {
-    background-color: white;
-  }
-  
-  .services-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 2rem;
-    margin-bottom: 3rem;
-  }
-  
-  .service-card {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    text-align: center;
-    transition: transform 0.3s ease;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-  }
-  
-  .service-card:hover {
-    transform: translateY(-10px);
-  }
-  
-  .service-icon {
-    font-size: 2.5rem;
-    color: #e67e22;
-    margin-bottom: 1.5rem;
-  }
-  
-  .service-card h3 {
-    margin-bottom: 1rem;
-    font-size: 1.5rem;
-    color: #333;
-  }
-  
-  .service-card p {
-    color: #666;
-    line-height: 1.6;
-  }
-  
-  .services-cta {
-    text-align: center;
-    margin-top: 1rem;
-  }
-  
-  /* Gallery Preview */
-  .gallery-preview {
-    background-color: #f5f5f5;
-  }
-  
-  .gallery-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-    gap: 1.5rem;
-    margin-bottom: 3rem;
-  }
-  
-  .gallery-item {
-    position: relative;
-    overflow: hidden;
-    border-radius: 8px;
-    height: 300px;
-  }
-  
-  .gallery-item img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transition: transform 0.5s ease;
-  }
-  
-  .gallery-item:hover img {
-    transform: scale(1.1);
-  }
-  
-  .gallery-overlay {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
-    padding: 1rem;
-    color: white;
-    opacity: 0;
-    transition: opacity 0.3s ease;
-  }
-  
-  .gallery-item:hover .gallery-overlay {
-    opacity: 1;
-  }
-  
-  .gallery-cta {
-    text-align: center;
-  }
-  
-  /* Testimonials */
-  .testimonials {
-    background-color: white;
-  }
-  
-  .testimonial-slider {
-    position: relative;
-    display: flex;
-    align-items: center;
-    margin: 0 auto;
-    max-width: 900px;
-  }
-  
-  .testimonial-container {
-    position: relative;
-    flex: 1;
-    overflow: hidden;
-    height: 300px;
-  }
-  
-  .testimonial {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    opacity: 0;
-    transition: opacity 0.5s ease;
-  }
-  
-  .testimonial.active {
-    opacity: 1;
-  }
-  
-  .testimonial-content {
-    background-color: white;
-    padding: 2rem;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-    text-align: center;
-    max-width: 600px;
-  }
-  
-  .quote-icon {
-    font-size: 2rem;
-    color: #e67e22;
-    margin-bottom: 1rem;
-  }
-  
-  .quote-text {
-    font-size: 1.1rem;
-    line-height: 1.6;
-    color: #555;
-    font-style: italic;
-    margin-bottom: 1.5rem;
-  }
-  
-  .testimonial-author {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 1rem;
-  }
-  
-  .testimonial-author img {
-    width: 60px;
-    height: 60px;
-    border-radius: 50%;
-    object-fit: cover;
-  }
-  
-  .testimonial-author span {
-    font-weight: 600;
-    color: #333;
-  }
-  
-  .slider-arrow {
-    background: #e67e22;
-    color: white;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: none;
-    cursor: pointer;
-    z-index: 2;
-    transition: background 0.3s ease;
-  }
-  
-  .slider-arrow:hover {
-    background: #d35400;
-  }
-  
-  .testimonial-indicators {
-    display: flex;
-    justify-content: center;
-    gap: 0.5rem;
-    margin-top: 2rem;
-  }
-  
-  .indicator {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    background-color: #ddd;
-    border: none;
-    cursor: pointer;
-    transition: background 0.3s ease;
-  }
-  
-  .indicator.active {
-    background-color: #e67e22;
-  }
-  
-  /* Call to Action */
-  .cta {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://source.unsplash.com/random/1920x1080?camera');
-    background-size: cover;
-    background-position: center;
-    color: white;
-    text-align: center;
-  }
-  
-  .cta h2 {
-    color: white;
-    margin-bottom: 1rem;
-  }
-  
-  .cta p {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-  }
-  
   /* Responsive Styles */
   @media (max-width: 768px) {
-    .hero h1 {
-      font-size: 2.5rem;
-    }
-    
-    .hero p {
-      font-size: 1.2rem;
-    }
-    
-    .about-content {
-      flex-direction: column;
-      gap: 2rem;
-    }
-    
-    .about-text {
-      order: 2;
-    }
-    
-    .about-image {
-      order: 1;
-    }
-    
-    .services-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    .gallery-grid {
-      grid-template-columns: 1fr;
-    }
-    
-    h2 {
-      font-size: 2rem;
-    }
-    
     .hero-buttons {
       flex-direction: column;
       gap: 1rem;

@@ -6,26 +6,12 @@
 	let { children } = $props();
 </script>
 
-<div class="app">
+<div class="flex flex-col min-h-screen">
 	<Navbar />
 	
-	<main>
+	<main class="flex-1 w-full pt-0">
 		{@render children()}
 	</main>
 	
 	<Footer />
 </div>
-
-<style>
-	.app {
-		display: flex;
-		flex-direction: column;
-		min-height: 100vh;
-	}
-	
-	main {
-		flex: 1;
-		padding-top: 0; /* Remove padding-top to allow hero section to start at the top */
-		width: 100%;
-	}
-</style>
