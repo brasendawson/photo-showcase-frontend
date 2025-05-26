@@ -59,6 +59,13 @@
         Pricing
       </a>
       <a 
+        href="/about" 
+        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/pricing' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        on:click={closeMenu}
+      >
+        About
+      </a>
+      <a 
         href="/book" 
         class={`bg-primary text-white py-2 px-5 rounded font-semibold hover:bg-primary-dark transition-colors duration-300 ${$page.url.pathname === '/book' ? 'bg-primary-dark' : ''}`}
         on:click={closeMenu}
