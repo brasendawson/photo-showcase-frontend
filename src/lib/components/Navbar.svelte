@@ -9,6 +9,24 @@
   function closeMenu() {
     isMenuOpen = false;
   }
+  
+  // Fix the active link detection function
+  function isActive(path) {
+    if (!$page.url) return false;
+    
+    // Exact matching for specific routes
+    if (path === '/pricing') {
+      return $page.url.pathname === '/pricing';
+    }
+    
+    if (path === '/about') {
+      return $page.url.pathname === '/about';
+    }
+    
+    // For other paths, use the startsWith logic
+    return $page.url.pathname === path || 
+           ($page.url.pathname.length > 1 && $page.url.pathname.startsWith(path + '/'));
+  }
 </script>
 
 <nav class="fixed top-0 left-0 w-full bg-transparent z-[1000] py-4 transition-colors duration-300">
@@ -60,7 +78,7 @@
       </a>
       <a 
         href="/about" 
-        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/pricing' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/about' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         About
