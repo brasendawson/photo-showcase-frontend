@@ -20,14 +20,6 @@
     }
   ];
   
-  // Sample gallery preview images
-  const galleryPreview = [
-    { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
-    { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
-    { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
-    { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
-  ];
-  
   // Sample services data with shorter descriptions
   const services = [
     {
@@ -52,6 +44,78 @@
     }
   ];
   
+  // Replace static gallery preview with fetched photos
+  let galleryPreview = [];
+  let isLoadingPreview = true;
+  let previewError = null;
+  
+  // Function to fetch featured photos for the homepage preview
+  async function fetchFeaturedPreview() {
+    isLoadingPreview = true;
+    previewError = null;
+    
+    try {
+      // Fetch featured photos from the API
+      const response = await fetch('http://localhost:3000/api/photos/gallery?featured=true&limit=4');
+      
+      if (!response.ok) {
+        throw new Error('Failed to load featured photos');
+      }
+      
+      const data = await response.json();
+      
+      // If we have featured photos, use them for the preview
+      if (data.photos && data.photos.length > 0) {
+        // Map API response to our gallery preview format
+        galleryPreview = data.photos.map(photo => ({
+          id: photo.id,
+          src: photo.imageUrl,
+          alt: photo.title,
+          category: photo.type ? photo.type.charAt(0).toUpperCase() + photo.type.slice(1) : 'Other'
+        }));
+        
+        // If we have fewer than 4 photos, fill with defaults
+        if (galleryPreview.length < 4) {
+          const defaultPreviews = [
+            { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
+            { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
+            { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
+            { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
+          ];
+          
+          // Add default images to fill up to 4
+          for (let i = galleryPreview.length; i < 4; i++) {
+            galleryPreview.push(defaultPreviews[i]);
+          }
+        }
+        
+        // Limit to exactly 4 photos
+        galleryPreview = galleryPreview.slice(0, 4);
+      } else {
+        // Use default images if no featured photos
+        galleryPreview = [
+          { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
+          { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
+          { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
+          { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
+        ];
+      }
+    } catch (err) {
+      console.error('Error fetching featured preview:', err);
+      previewError = err.message;
+      
+      // Fall back to default images
+      galleryPreview = [
+        { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
+        { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
+        { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
+        { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
+      ];
+    } finally {
+      isLoadingPreview = false;
+    }
+  }
+  
   let currentTestimonialIndex = 0;
   
   function nextTestimonial() {
@@ -63,6 +127,10 @@
   }
   
   onMount(() => {
+    // Fetch featured photos for preview
+    fetchFeaturedPreview();
+    
+    // Existing testimonial rotation
     const interval = setInterval(nextTestimonial, 5000);
     return () => clearInterval(interval);
   });
@@ -98,7 +166,7 @@
         </div>
       </div>
       <div class="flex-1 md:order-2 order-1">
-        <img src="https://source.unsplash.com/random/600x800?photographer" alt="Photographer at work" class="w-full h-auto rounded-lg shadow-image" />
+        <img src="https://res.cloudinary.com/dornqaxya/image/upload/photo_at_work_uivynf.jpg" alt="Photographer at work" class="w-full h-auto rounded-lg shadow-image" />
       </div>
     </div>
   </div>
@@ -134,16 +202,32 @@
     <h2 class="text-4xl text-center mb-1 text-text-dark">Featured Work</h2>
     <p class="text-center text-lg text-text-muted mb-12">A glimpse of our photography portfolio</p>
     
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-      {#each galleryPreview as image, i}
-        <div class="relative overflow-hidden rounded-lg h-[300px] group">
-          <img src={image.src} alt={image.alt} loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
-          <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-4 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-            <span>{image.category}</span>
+    {#if isLoadingPreview}
+      <div class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    {:else if previewError}
+      <div class="text-center py-8 mb-8">
+        <p class="text-red-500 mb-4">Error loading featured photos</p>
+        <button 
+          class="px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark"
+          on:click={fetchFeaturedPreview}
+        >
+          Try Again
+        </button>
+      </div>
+    {:else}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+        {#each galleryPreview as image, i}
+          <div class="relative overflow-hidden rounded-lg h-[300px] group">
+            <img src={image.src} alt={image.alt} loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+            <div class="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/70 to-transparent p-4 text-white opacity-0 transition-opacity duration-300 group-hover:opacity-100">
+              <span>{image.category}</span>
+            </div>
           </div>
-        </div>
-      {/each}
-    </div>
+        {/each}
+      </div>
+    {/if}
     
     <div class="text-center">
       <a href="/gallery" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer bg-primary text-white hover:bg-primary-dark">View Full Gallery</a>

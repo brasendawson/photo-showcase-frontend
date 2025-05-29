@@ -20,6 +20,7 @@
   let bookings = [];
   let services = [];
   let photos = [];
+  // Update photographers to empty array - we'll fetch from API
   let photographers = [];
   
   // Form data for new/edit items
@@ -46,10 +47,14 @@
   let showPhotoForm = false;
   let showServiceForm = false;
   let showAssignForm = false;
+  let showDeletePhotoModal = false;
+  let showDeleteServiceModal = false; // New state for delete service modal
   let selectedBooking = null;
   let selectedPhotographer = null;
+  let photoToDelete = null; // New state to track which photo to delete
+  let serviceToDelete = null; // New state to track which service to delete
   let statusOptions = ['pending', 'confirmed', 'completed', 'cancelled'];
-  let photoTypes = ['portrait', 'wedding', 'event', 'commercial', 'landscape', 'family'];
+  let photoTypes = ['portrait', 'wedding', 'event', 'commercial', 'landscape', 'family', 'other'];
   
   // Check admin access and load data
   onMount(async () => {
@@ -77,15 +82,34 @@
           email: tokenData.email
         });
         
-        // First load services and photographers, then load bookings
-        await Promise.all([
-          fetchServices(),
-          fetchPhotographers(),
-          fetchPhotos()
-        ]);
+        // Load data including photographers - changed order to fetch photographers first
+        try {
+          await fetchServices();
+        } catch (e) {
+          console.error('Error loading services:', e);
+        }
         
-        // Load bookings after services are loaded
-        await fetchBookings();
+        try {
+          await fetchPhotographers();
+        } catch (e) {
+          console.error('Error loading photographers:', e);
+        }
+        
+        try {
+          await fetchBookings();
+        } catch (e) {
+          console.error('Error loading bookings:', e);
+        }
+        
+        try {
+          await fetchPhotos();
+        } catch (e) {
+          console.error('Error loading photos:', e);
+        }
+        
+        // Add this function to reprocess bookings after photographers are loaded
+        processBookingsWithPhotographers();
+        
       } catch (e) {
         console.error('Error parsing token or loading data', e);
         toast.error('Authentication error');
@@ -94,7 +118,27 @@
     }
   });
 
-  // Fetch all bookings
+  // New function to reprocess bookings after photographers are loaded
+  function processBookingsWithPhotographers() {
+    // Skip if no photographers or bookings
+    if (!photographers.length || !bookings.length) return;
+    
+    // Reprocess all bookings to update assigned photographers
+    bookings = bookings.map(booking => {
+      if (booking.photographerId) {
+        const photographer = photographers.find(p => p.id === booking.photographerId);
+        if (photographer) {
+          booking.assignedPhotographer = photographer;
+          console.log(`Assigned photographer ${photographer.name} to booking ${booking.id}`);
+        } else {
+          console.warn(`Photographer with ID ${booking.photographerId} not found for booking ${booking.id}`);
+        }
+      }
+      return booking;
+    });
+  }
+  
+  // Fetch all bookings - Modified to correctly handle photographer assignment
   async function fetchBookings() {
     isLoading.bookings = true;
     try {
@@ -112,7 +156,7 @@
       const data = await response.json();
       bookings = data.bookings || [];
       
-      // Process bookings to ensure service info is properly displayed
+      // Process bookings to ensure service info and photographer info is properly displayed
       bookings = bookings.map(booking => {
         // Look up service name if we have a serviceId but no service name
         if (booking.serviceId && services.length > 0) {
@@ -121,8 +165,19 @@
             booking.serviceName = service.name;
           }
         }
+        
+        // Look up photographer if we have photographerId but no assignedPhotographer
+        if (booking.photographerId && !booking.assignedPhotographer && photographers.length > 0) {
+          const photographer = photographers.find(p => p.id === booking.photographerId);
+          if (photographer) {
+            booking.assignedPhotographer = photographer;
+          }
+        }
+        
         return booking;
       });
+      
+      console.log('Processed bookings:', bookings);
     } catch (error) {
       console.error('Error fetching bookings:', error);
       toast.error('Failed to load bookings');
@@ -171,33 +226,32 @@
     }
   }
   
-  // Fetch photographers for assignment
-  async function fetchPhotographers() {
-    try {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/users/photographers', {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fetch photographers');
-      }
-      
-      const data = await response.json();
-      photographers = data.photographers || [];
-    } catch (error) {
-      console.error('Error fetching photographers:', error);
-      toast.error('Failed to load photographers');
-    }
-  }
-  
-  // Create or update photo
+  // Create or update photo - modified to handle potential server errors
   async function savePhoto() {
     try {
       const token = localStorage.getItem('token');
       const isEditing = !!photoForm.id;
+      
+      // Validate required fields
+      if (!photoForm.title || !photoForm.imageUrl || !photoForm.photographerName) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      
+      // Validate image URL format
+      try {
+        new URL(photoForm.imageUrl);
+      } catch (e) {
+        toast.error('Please enter a valid image URL');
+        return;
+      }
+      
+      // Prepare the request data, filtering out any null/undefined values
+      const photoData = Object.fromEntries(
+        Object.entries(photoForm).filter(([_, value]) => value !== null && value !== undefined)
+      );
+      
+      console.log('Sending photo data:', photoData);
       
       const response = await fetch(
         isEditing ? `http://localhost:3000/api/photos/${photoForm.id}` : 'http://localhost:3000/api/photos', 
@@ -207,12 +261,20 @@
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${token}`
           },
-          body: JSON.stringify(photoForm)
+          body: JSON.stringify(photoData)
         }
       );
       
+      // Handle different response status codes
+      if (response.status === 500) {
+        const errorText = await response.text();
+        console.error('Server error:', errorText);
+        throw new Error('Server error. The photo could not be saved.');
+      }
+      
       if (!response.ok) {
-        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} photo`);
+        const errorData = await response.json();
+        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} photo`);
       }
       
       const data = await response.json();
@@ -228,14 +290,18 @@
       resetPhotoForm();
     } catch (error) {
       console.error('Error saving photo:', error);
-      toast.error(error.message);
+      toast.error(error.message || 'An unexpected error occurred');
     }
   }
   
-  // Delete photo
+  // Update the delete photo function to use the modal instead of confirm
+  function confirmDeletePhoto(photo) {
+    photoToDelete = photo;
+    showDeletePhotoModal = true;
+  }
+  
+  // Execute the actual deletion after confirmation in modal
   async function deletePhoto(id) {
-    if (!confirm('Are you sure you want to delete this photo?')) return;
-    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:3000/api/photos/${id}`, {
@@ -251,10 +317,20 @@
       
       photos = photos.filter(p => p.id !== id);
       toast.success('Photo deleted successfully');
+      
+      // Close the modal
+      showDeletePhotoModal = false;
+      photoToDelete = null;
     } catch (error) {
       console.error('Error deleting photo:', error);
       toast.error(error.message);
     }
+  }
+  
+  // Cancel the delete operation
+  function cancelDeletePhoto() {
+    showDeletePhotoModal = false;
+    photoToDelete = null;
   }
   
   // Create or update service
@@ -296,10 +372,14 @@
     }
   }
   
-  // Delete service
+  // Update to handle service deletion via modal instead of confirm
+  function confirmDeleteService(service) {
+    serviceToDelete = service;
+    showDeleteServiceModal = true;
+  }
+  
+  // Original delete service function modified to work with the modal
   async function deleteService(id) {
-    if (!confirm('Are you sure you want to delete this service?')) return;
-    
     try {
       const token = localStorage.getItem('token');
       const response = await fetch(`http://localhost:3000/api/services/${id}`, {
@@ -315,46 +395,76 @@
       
       services = services.filter(s => s.id !== id);
       toast.success('Service deleted successfully');
+      
+      // Close the modal
+      showDeleteServiceModal = false;
+      serviceToDelete = null;
     } catch (error) {
       console.error('Error deleting service:', error);
       toast.error(error.message);
     }
   }
   
-  // Assign photographer to booking
+  // Assign photographer to booking - modified to use the correct API endpoint
   async function assignPhotographer() {
     if (!selectedBooking || !selectedPhotographer) {
-      toast.error('Please select both a booking and a photographer');
+      toast.error('Please select a photographer');
       return;
     }
     
     try {
       const token = localStorage.getItem('token');
+      const photographer = photographers.find(p => p.id === parseInt(selectedPhotographer));
+      
+      if (!photographer) {
+        throw new Error('Selected photographer not found');
+      }
+      
+      // Make the actual API call to assign the photographer
       const response = await fetch(`http://localhost:3000/api/bookings/${selectedBooking.id}/assign`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
-        body: JSON.stringify({ photographerId: selectedPhotographer })
+        body: JSON.stringify({
+          photographerId: photographer.id
+        })
       });
       
       if (!response.ok) {
-        throw new Error('Failed to assign photographer');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to assign photographer');
       }
       
       const data = await response.json();
       
-      // Update booking in list
-      bookings = bookings.map(b => b.id === selectedBooking.id ? data.booking : b);
-      toast.success('Photographer assigned successfully');
+      // Update the local bookings array with the updated booking
+      bookings = bookings.map(b => {
+        if (b.id === selectedBooking.id) {
+          return { 
+            ...b, 
+            assignedPhotographer: photographer,
+            photographerId: photographer.id,
+            photographerName: photographer.name
+          };
+        }
+        return b;
+      });
       
+      toast.success(`${photographer.name} assigned successfully`);
+      
+      // Close the modal and reset selection
       showAssignForm = false;
       selectedBooking = null;
       selectedPhotographer = null;
+      
+      // Optionally refresh the bookings to ensure data consistency
+      await fetchBookings();
+      
     } catch (error) {
       console.error('Error assigning photographer:', error);
-      toast.error(error.message);
+      toast.error(error.message || 'Failed to assign photographer');
     }
   }
   
@@ -456,6 +566,46 @@
       case 'completed': return 'bg-blue-500';
       case 'cancelled': return 'bg-red-500';
       default: return 'bg-gray-500';
+    }
+  }
+  
+  // New function to fetch photographers from admin/users endpoint with error handling
+  async function fetchPhotographers() {
+    try {
+      const token = localStorage.getItem('token');
+      // Use the provided endpoint to get users
+      const response = await fetch('http://localhost:3000/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
+      const data = await response.json();
+      console.log('API Response:', data); // Log the full response for debugging
+      
+      if (!data.users || !Array.isArray(data.users)) {
+        console.error('Invalid API response format - users property missing or not an array');
+        photographers = [];
+        return;
+      }
+      
+      // ONLY include users with photographer role
+      photographers = data.users
+        .filter(user => user.role === 'photographer')
+        .map(user => ({
+          id: user.id,
+          name: user.username || user.name || `User #${user.id}`
+        }));
+        
+      console.log('Loaded photographers:', photographers);
+    } catch (error) {
+      console.error('Error fetching photographers:', error);
+      photographers = [];
+      toast.error('Failed to load photographers');
     }
   }
 </script>
@@ -564,6 +714,9 @@
                       <td class="py-3 px-4 text-sm">
                         {#if booking.assignedPhotographer}
                           {booking.assignedPhotographer.name}
+                        {:else if booking.photographerId}
+                          <!-- If we have photographerId but couldn't find the matching photographer -->
+                          <span class="text-amber-600">Photographer #{booking.photographerId}</span>
                         {:else}
                           <span class="text-text-muted">Not assigned</span>
                         {/if}
@@ -643,7 +796,7 @@
                         Edit
                       </button>
                       <button 
-                        on:click={() => deleteService(service.id)}
+                        on:click={() => confirmDeleteService(service)}
                         class="px-4 py-2 bg-red-100 text-red-600 rounded hover:bg-red-200"
                       >
                         Delete
@@ -700,7 +853,7 @@
                         Edit
                       </button>
                       <button 
-                        on:click={() => deletePhoto(photo.id)}
+                        on:click={() => confirmDeletePhoto(photo)}
                         class="px-3 py-1 bg-red-100 text-red-600 rounded hover:bg-red-200 text-sm"
                       >
                         Delete
@@ -727,7 +880,7 @@
       
       <form on:submit|preventDefault={savePhoto} class="space-y-4">
         <div>
-          <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title <span class="text-red-500">*</span></label>
           <input 
             type="text" 
             id="title" 
@@ -748,18 +901,20 @@
         </div>
         
         <div>
-          <label for="imageUrl" class="block text-sm font-medium text-gray-700 mb-1">Image URL</label>
+          <label for="imageUrl" class="block text-sm font-medium text-gray-700 mb-1">Image URL <span class="text-red-500">*</span></label>
           <input 
             type="url" 
             id="imageUrl" 
             bind:value={photoForm.imageUrl} 
             required
+            placeholder="https://example.com/your-image.jpg"
             class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
           />
+          <p class="text-xs text-gray-500 mt-1">Enter a direct URL to an image (must start with http:// or https://)</p>
         </div>
         
         <div>
-          <label for="photographerName" class="block text-sm font-medium text-gray-700 mb-1">Photographer Name</label>
+          <label for="photographerName" class="block text-sm font-medium text-gray-700 mb-1">Photographer Name <span class="text-red-500">*</span></label>
           <input 
             type="text" 
             id="photographerName" 
@@ -849,30 +1004,30 @@
             type="number" 
             id="price" 
             bind:value={serviceForm.price} 
-            required
             min="0"
             step="0.01"
+            required
             class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
           />
         </div>
-
+        
         <div>
           <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
           <input 
             type="text" 
             id="duration" 
-            bind:value={serviceForm.duration} 
+            bind:value={serviceForm.duration}
             required
             class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
             placeholder="e.g. 2-3 hours"
           />
         </div>
-
+        
         <div class="flex items-center">
           <input 
             type="checkbox" 
             id="isActive" 
-            bind:checked={serviceForm.isActive} 
+            bind:checked={serviceForm.isActive}
             class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
           />
           <label for="isActive" class="ml-2 block text-sm text-gray-700">Service is active</label>
@@ -880,7 +1035,7 @@
         
         <div class="flex justify-end space-x-3 pt-2">
           <button 
-            type="button"
+            type="button" 
             on:click={resetServiceForm}
             class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
           >
@@ -897,7 +1052,6 @@
     </div>
   </div>
 {/if}
-
 <!-- Assign Photographer Modal -->
 {#if showAssignForm}
   <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -909,22 +1063,39 @@
           <p class="text-sm text-gray-500">Booking for:</p>
           <p class="font-medium">{selectedBooking.fullName}</p>
           <p class="text-sm">{formatDate(selectedBooking.date)} at {selectedBooking.time}</p>
-          <p class="text-sm">Service: {selectedBooking.sessionType}</p>
+          <p class="text-sm">Service: 
+            {#if selectedBooking.serviceName}
+              {selectedBooking.serviceName}
+            {:else if selectedBooking.serviceType}
+              {selectedBooking.serviceType}
+            {:else if selectedBooking.sessionType}
+              {selectedBooking.sessionType}
+            {:else if selectedBooking.service && selectedBooking.service.name}
+              {selectedBooking.service.name}
+            {:else if selectedBooking.serviceId}
+              Service #{selectedBooking.serviceId}
+            {:else}
+              Unknown service
+            {/if}
+          </p>
         </div>
       {/if}
       
-      <label for="photographer" class="block text-sm font-medium text-gray-700 mb-1">Select Photographer</label>
       <div class="mb-6">
+        <label for="photographer" class="block text-sm font-medium text-gray-700 mb-1">Select Photographer</label>
         <select 
           id="photographer" 
           bind:value={selectedPhotographer} 
           class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white"
         >
-          <option value={null} disabled>Select a photographer</option>
+          <option value={null} disabled selected>-- Select a photographer --</option>
           {#each photographers as photographer}
             <option value={photographer.id}>{photographer.name}</option>
           {/each}
         </select>
+        {#if photographers.length === 0}
+          <p class="text-xs text-red-600 mt-1">Failed to load photographers. Please try again.</p>
+        {/if}
       </div>
       
       <div class="flex justify-end space-x-3">
@@ -941,6 +1112,91 @@
           disabled={!selectedPhotographer}
         >
           Assign
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Delete Photo Confirmation Modal -->
+{#if showDeletePhotoModal && photoToDelete}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Delete</h3>
+      
+      <div class="mb-6">
+        <p class="mb-4">Are you sure you want to delete this photo?</p>
+        
+        <div class="bg-gray-50 p-4 rounded-md mb-4">
+          <div class="flex items-center space-x-4">
+            <img 
+              src={photoToDelete.imageUrl} 
+              alt={photoToDelete.title} 
+              class="w-20 h-20 object-cover rounded-md"
+            />
+            <div>
+              <h4 class="font-medium text-gray-900">{photoToDelete.title}</h4>
+              <p class="text-sm text-gray-500">By {photoToDelete.photographerName}</p>
+            </div>
+          </div>
+        </div>
+        
+        <p class="text-sm text-red-600">This action cannot be undone.</p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          type="button"
+          on:click={cancelDeletePhoto}
+          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          on:click={() => deletePhoto(photoToDelete.id)}
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        >
+          Delete Photo
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Delete Service Confirmation Modal -->
+{#if showDeleteServiceModal && serviceToDelete}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Delete Service</h3>
+      
+      <div class="mb-6">
+        <p class="mb-4">Are you sure you want to delete this service?</p>
+        
+        <div class="bg-gray-50 p-4 rounded-md mb-4">
+          <div class="space-y-2">
+            <h4 class="font-medium text-gray-900 text-lg">{serviceToDelete.name}</h4>
+            <p class="text-primary font-bold">{formatCurrency(serviceToDelete.price)}</p>
+            <p class="text-gray-500 text-sm">{serviceToDelete.description}</p>
+            <p class="text-gray-500 italic text-sm">Duration: {serviceToDelete.duration}</p>
+          </div>
+        </div>
+        
+        <p class="text-sm text-red-600">This action cannot be undone. All associated bookings will remain but will no longer be linked to this service.</p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          type="button"
+          on:click={cancelDeleteService}
+          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          on:click={() => deleteService(serviceToDelete.id)}
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        >
+          Delete Service
         </button>
       </div>
     </div>

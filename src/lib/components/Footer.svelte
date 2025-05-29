@@ -13,9 +13,8 @@
       <h3 class="text-gray-100 mb-4 text-lg relative after:content-[''] after:absolute md:after:left-0 after:left-1/2 md:after:transform-none after:transform after:-translate-x-1/2 md:after:translate-x-0 after:bottom-[-8px] after:w-10 after:h-0.5 after:bg-primary">Quick Links</h3>
       <ul>
         <li class="mb-2"><a href="/" class="text-gray-400 hover:text-primary transition-colors">Home</a></li>
-        <li class="mb-2"><a href="/gallery" class="text-gray-400 hover:text-primary transition-colors">Gallery</a></li>
-        <li class="mb-2"><a href="/pricing" class="text-gray-400 hover:text-primary transition-colors">Pricing</a></li>
         <li class="mb-2"><a href="/services" class="text-gray-400 hover:text-primary transition-colors">Services</a></li>
+        <li class="mb-2"><a href="/gallery" class="text-gray-400 hover:text-primary transition-colors">Gallery</a></li>
         <li class="mb-2"><a href="/book" class="text-gray-400 hover:text-primary transition-colors">Book Now</a></li>
       </ul>
     </div>
@@ -29,8 +28,8 @@
         <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram" class="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-primary rounded-full text-white hover:transform hover:-translate-y-1 transition-all">
           <i class="fab fa-instagram"></i>
         </a>
-        <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter" class="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-primary rounded-full text-white hover:transform hover:-translate-y-1 transition-all">
-          <i class="fab fa-twitter"></i>
+        <a href="https://x.com" target="_blank" rel="noopener noreferrer" aria-label="X" class="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-primary rounded-full text-white hover:transform hover:-translate-y-1 transition-all">
+          <i class="fa-brands fa-x-twitter"></i>
         </a>
         <a href="https://pinterest.com" target="_blank" rel="noopener noreferrer" aria-label="Pinterest" class="flex items-center justify-center w-10 h-10 bg-gray-800 hover:bg-primary rounded-full text-white hover:transform hover:-translate-y-1 transition-all">
           <i class="fab fa-pinterest"></i>
@@ -46,6 +45,6 @@
   </div>
   
   <div class="text-center pt-8 mt-8 border-t border-gray-800 text-gray-500 text-sm">
-    <p>&copy; {currentYear} Capture Moments Photography. All rights reserved.</p>
+    <p>&copy; {currentYear} Group 17. All rights reserved.</p>
   </div>
 </footer>

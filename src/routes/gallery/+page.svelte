@@ -1,187 +1,269 @@
 <script>
   import { onMount } from 'svelte';
   
-  // Featured images for slideshow
-  const slideshowImages = [
-    {
-      src: "https://source.unsplash.com/random/1920x800?wedding",
-      alt: "Wedding Photography",
-      title: "Wedding Moments",
-      subtitle: "Capturing the most special day of your life"
-    },
-    {
-      src: "https://source.unsplash.com/random/1920x800?portrait",
-      alt: "Portrait Photography",
-      title: "Portrait Sessions",
-      subtitle: "Professional portraits that showcase your personality"
-    },
-    {
-      src: "https://source.unsplash.com/random/1920x800?event",
-      alt: "Event Photography",
-      title: "Event Coverage",
-      subtitle: "Documenting your special occasions"
-    },
-    {
-      src: "https://source.unsplash.com/random/1920x800?landscape",
-      alt: "Landscape Photography",
-      title: "Nature & Landscapes",
-      subtitle: "Breathtaking scenes from around the world"
-    }
-  ];
-  
-  // Gallery categories
-  const categories = [
-    "All",
-    "Wedding",
-    "Portrait",
-    "Family",
-    "Event",
-    "Commercial",
-    "Nature"
-  ];
-  
-  // Gallery images
-  const galleryImages = [
-    {
-      id: 1,
-      src: "https://source.unsplash.com/random/600x600?wedding-ceremony",
-      alt: "Wedding ceremony",
-      category: "Wedding",
-      title: "Wedding Ceremony"
-    },
-    {
-      id: 2,
-      src: "https://source.unsplash.com/random/600x600?wedding-couple",
-      alt: "Wedding couple",
-      category: "Wedding",
-      title: "Couple Portraits"
-    },
-    {
-      id: 3,
-      src: "https://source.unsplash.com/random/600x600?corporate-portrait",
-      alt: "Corporate portrait",
-      category: "Portrait",
-      title: "Corporate Headshot"
-    },
-    {
-      id: 4,
-      src: "https://source.unsplash.com/random/600x600?family-portrait",
-      alt: "Family portrait",
-      category: "Family",
-      title: "Family Session"
-    },
-    {
-      id: 5,
-      src: "https://source.unsplash.com/random/600x600?conference",
-      alt: "Conference event",
-      category: "Event",
-      title: "Corporate Conference"
-    },
-    {
-      id: 6,
-      src: "https://source.unsplash.com/random/600x600?product-photography",
-      alt: "Product photography",
-      category: "Commercial",
-      title: "Product Showcase"
-    },
-    {
-      id: 7,
-      src: "https://source.unsplash.com/random/600x600?landscape-mountains",
-      alt: "Mountain landscape",
-      category: "Nature",
-      title: "Mountain Vista"
-    },
-    {
-      id: 8,
-      src: "https://source.unsplash.com/random/600x600?wedding-reception",
-      alt: "Wedding reception",
-      category: "Wedding",
-      title: "Reception Celebration"
-    },
-    {
-      id: 9,
-      src: "https://source.unsplash.com/random/600x600?portrait-woman",
-      alt: "Woman portrait",
-      category: "Portrait",
-      title: "Studio Portrait"
-    },
-    {
-      id: 10,
-      src: "https://source.unsplash.com/random/600x600?children-family",
-      alt: "Children family",
-      category: "Family",
-      title: "Children's Session"
-    },
-    {
-      id: 11,
-      src: "https://source.unsplash.com/random/600x600?graduation",
-      alt: "Graduation event",
-      category: "Event",
-      title: "Graduation Ceremony"
-    },
-    {
-      id: 12,
-      src: "https://source.unsplash.com/random/600x600?real-estate",
-      alt: "Real estate photography",
-      category: "Commercial",
-      title: "Real Estate Photography"
-    },
-    {
-      id: 13,
-      src: "https://source.unsplash.com/random/600x600?landscape-ocean",
-      alt: "Ocean landscape",
-      category: "Nature",
-      title: "Ocean Sunset"
-    },
-    {
-      id: 14,
-      src: "https://source.unsplash.com/random/600x600?wedding-details",
-      alt: "Wedding details",
-      category: "Wedding",
-      title: "Wedding Details"
-    },
-    {
-      id: 15,
-      src: "https://source.unsplash.com/random/600x600?portrait-man",
-      alt: "Man portrait",
-      category: "Portrait",
-      title: "Outdoor Portrait"
-    },
-    {
-      id: 16,
-      src: "https://source.unsplash.com/random/600x600?party-event",
-      alt: "Party event",
-      category: "Event",
-      title: "Birthday Celebration"
-    }
-  ];
-  
   // State variables
   let currentSlide = 0;
   let selectedCategory = "All";
+  let galleryImages = [];
   let filteredImages = [];
   let isLightboxOpen = false;
   let lightboxImage = null;
+  let isLoading = true;
+  let error = null;
+  let slideshowImages = []; // Now empty, will be populated with featured photos
+  
+  // Pagination
+  let currentPage = 1;
+  let totalPages = 1;
+  let totalPhotos = 0;
+  const photosPerPage = 16;
+  
+  // Gallery categories based on API photo types
+  const categories = [
+    "All",
+    "Portrait",
+    "Wedding",
+    "Event",
+    "Commercial",
+    "Landscape",
+    "Family",
+    "Other",
+  ];
+  
+  // Fetch featured photos for slideshow
+  async function fetchFeaturedPhotos() {
+    try {
+      // Fetch featured photos for the slideshow
+      const response = await fetch('http://localhost:3000/api/photos/gallery?featured=true');
+      
+      if (!response.ok) {
+        throw new Error('Failed to load featured photos');
+      }
+      
+      const data = await response.json();
+      
+      // If we have featured photos, ensure we have one per type
+      if (data.photos && data.photos.length > 0) {
+        // Filter out photos with type 'other'
+        const filteredPhotos = data.photos.filter(photo => 
+          photo.type && photo.type.toLowerCase() !== 'other'
+        );
+        
+        if (filteredPhotos.length > 0) {
+          // Create a map to store one photo per type
+          const photosByType = new Map();
+          
+          // Process all photos and keep only one per type
+          filteredPhotos.forEach(photo => {
+            const type = photo.type.toLowerCase();
+            // Only add this photo if we don't already have one of this type
+            // or if this photo is featured and the existing one is not
+            if (!photosByType.has(type) || (photo.featured && !photosByType.get(type).featured)) {
+              photosByType.set(type, photo);
+            }
+          });
+          
+          // Convert the map values to an array
+          const selectedPhotos = Array.from(photosByType.values());
+          
+          // If we have photos after filtering
+          if (selectedPhotos.length > 0) {
+            slideshowImages = selectedPhotos.map(photo => ({
+              src: photo.imageUrl,
+              alt: photo.title,
+              title: photo.title,
+              type: photo.type.toLowerCase(), // Store type for debugging
+              subtitle: photo.description || `${photo.type.charAt(0).toUpperCase() + photo.type.slice(1)} Photography`
+            }));
+            
+            console.log('Slideshow images (one per type):', slideshowImages);
+          } else {
+            // Fall back to defaults if no suitable photos found
+            useDefaultSlideshow();
+          }
+        } else {
+          // Fall back to defaults if no non-'other' photos
+          useDefaultSlideshow();
+        }
+      } else {
+        // Fall back to defaults if no photos at all
+        useDefaultSlideshow();
+      }
+    } catch (err) {
+      console.error('Error fetching featured photos:', err);
+      // Fall back to defaults
+      useDefaultSlideshow();
+    }
+  }
+  
+  // Helper function to set up the default slideshow with one image per type
+  function useDefaultSlideshow() {
+    slideshowImages = [
+      {
+        src: "https://source.unsplash.com/random/1920x800?portrait",
+        alt: "Portrait Photography",
+        title: "Portrait Sessions",
+        type: "portrait",
+        subtitle: "Professional portraits that showcase your personality"
+      },
+      {
+        src: "https://source.unsplash.com/random/1920x800?wedding",
+        alt: "Wedding Photography",
+        title: "Wedding Moments",
+        type: "wedding",
+        subtitle: "Capturing the most special day of your life"
+      },
+      {
+        src: "https://source.unsplash.com/random/1920x800?event",
+        alt: "Event Photography",
+        title: "Event Coverage",
+        type: "event",
+        subtitle: "Documenting your special occasions"
+      },
+      {
+        src: "https://source.unsplash.com/random/1920x800?commercial",
+        alt: "Commercial Photography",
+        title: "Commercial Photography",
+        type: "commercial",
+        subtitle: "Elevate your brand with professional imagery"
+      },
+      {
+        src: "https://source.unsplash.com/random/1920x800?landscape",
+        alt: "Landscape Photography",
+        title: "Nature & Landscapes",
+        type: "landscape",
+        subtitle: "Breathtaking scenes from around the world"
+      },
+      {
+        src: "https://source.unsplash.com/random/1920x800?family",
+        alt: "Family Photography",
+        title: "Family Portraits",
+        type: "family",
+        subtitle: "Preserving precious family moments forever"
+      }
+    ];
+  }
+
+  // Fetch photos from API
+  async function fetchPhotos() {
+    isLoading = true;
+    error = null;
+    
+    try {
+      // Build query parameters
+      const params = new URLSearchParams();
+      params.append('page', currentPage.toString());
+      params.append('limit', photosPerPage.toString());
+      
+      // Add type filter if not "All"
+      if (selectedCategory !== 'All') {
+        params.append('type', selectedCategory.toLowerCase());
+      }
+      
+      const response = await fetch(`http://localhost:3000/api/photos/gallery?${params}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to load gallery photos');
+      }
+      
+      const data = await response.json();
+      
+      // Map the API response to our gallery format
+      galleryImages = data.photos.map((photo, index) => ({
+        id: photo.id || index + 1,
+        src: photo.imageUrl,
+        alt: photo.title,
+        category: photo.type ? photo.type.charAt(0).toUpperCase() + photo.type.slice(1) : 'Other',
+        title: photo.title,
+        description: photo.description || '',
+        photographerName: photo.photographerName
+      }));
+      
+      totalPhotos = data.totalPhotos || galleryImages.length;
+      totalPages = data.numOfPages || 1;
+      
+      // Apply filters
+      updateFilteredImages();
+      
+    } catch (err) {
+      console.error('Error fetching photos:', err);
+      error = err.message;
+    } finally {
+      isLoading = false;
+    }
+  }
+  
+  // Fetch single photo for lightbox
+  async function fetchSinglePhoto(id) {
+    try {
+      const response = await fetch(`http://localhost:3000/api/photos/${id}`);
+      
+      if (!response.ok) {
+        throw new Error('Failed to load photo details');
+      }
+      
+      const data = await response.json();
+      
+      // Update the lightbox image with full details
+      lightboxImage = {
+        id: data.photo.id,
+        src: data.photo.imageUrl,
+        alt: data.photo.title,
+        title: data.photo.title,
+        category: data.photo.type ? data.photo.type.charAt(0).toUpperCase() + data.photo.type.slice(1) : 'Other',
+        description: data.photo.description,
+        photographerName: data.photo.photographerName
+      };
+      
+    } catch (err) {
+      console.error('Error fetching photo details:', err);
+      // If we fail to get details, keep using the basic info we already have
+    }
+  }
   
   // Filter gallery images based on selected category
-  $: {
+  function updateFilteredImages() {
     if (selectedCategory === "All") {
       filteredImages = galleryImages;
     } else {
-      filteredImages = galleryImages.filter(img => img.category === selectedCategory);
+      filteredImages = galleryImages.filter(img => 
+        img.category.toLowerCase() === selectedCategory.toLowerCase()
+      );
     }
   }
   
   // Handle category selection
   function selectCategory(category) {
-    selectedCategory = category;
+    if (category !== selectedCategory) {
+      selectedCategory = category;
+      currentPage = 1; // Reset to first page when changing categories
+      fetchPhotos();
+    }
+  }
+  
+  // Page navigation
+  function goToPage(page) {
+    if (page >= 1 && page <= totalPages && page !== currentPage) {
+      currentPage = page;
+      fetchPhotos();
+      // Scroll back to gallery top
+      const galleryElement = document.getElementById('gallery-section');
+      if (galleryElement) {
+        galleryElement.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
   }
   
   // Open lightbox
-  function openLightbox(image) {
-    lightboxImage = image;
+  async function openLightbox(image) {
+    lightboxImage = image; // Set basic info immediately
     isLightboxOpen = true;
     document.body.classList.add('overflow-hidden');
+    
+    // Fetch full details if we have an ID
+    if (image.id) {
+      await fetchSinglePhoto(image.id);
+    }
   }
   
   // Close lightbox
@@ -199,13 +281,13 @@
     currentSlide = (currentSlide - 1 + slideshowImages.length) % slideshowImages.length;
   }
   
-  // Auto-advance slideshow
-  onMount(() => {
-    const interval = setInterval(() => {
-      nextSlide();
-    }, 5000);
+  // Modified onMount to remove auto-advance slideshow
+  onMount(async () => {
+    // First fetch featured photos for slideshow
+    await fetchFeaturedPhotos();
     
-    return () => clearInterval(interval);
+    // Then fetch regular gallery photos
+    fetchPhotos();
   });
 </script>
 
@@ -215,7 +297,7 @@
 </svelte:head>
 
 <!-- Hero Slideshow Section -->
-<section class="relative pt-20 h-[600px] overflow-hidden">
+<section class="relative pt-20 h-screen overflow-hidden">
   {#each slideshowImages as image, i}
     <div 
       class="absolute inset-0 transition-opacity duration-1000 bg-cover bg-center bg-no-repeat"
@@ -262,7 +344,7 @@
 </section>
 
 <!-- Gallery Section -->
-<section class="py-16 bg-bg-lighter">
+<section id="gallery-section" class="py-16 bg-bg-lighter">
   <div class="max-w-7xl mx-auto px-4">
     <h2 class="text-4xl font-bold text-center text-text-dark mb-4">Our Photography Portfolio</h2>
     <p class="text-lg text-text-muted text-center max-w-3xl mx-auto mb-12">
@@ -282,35 +364,24 @@
       {/each}
     </div>
     
-    <!-- Gallery Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {#each filteredImages as image}
-        <div 
-          class="group relative overflow-hidden rounded-lg cursor-pointer aspect-square"
-          on:click={() => openLightbox(image)}
-          on:keydown={(e) => e.key === 'Enter' && openLightbox(image)}
-          tabindex="0"
-          role="button"
-          aria-label={`View ${image.title}`}
+    <!-- Loading State -->
+    {#if isLoading}
+      <div class="flex justify-center py-12">
+        <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    <!-- Error State -->
+    {:else if error}
+      <div class="text-center py-12">
+        <p class="text-red-500 text-lg mb-4">Error loading gallery: {error}</p>
+        <button 
+          class="px-6 py-2 bg-primary text-white rounded hover:bg-primary-dark transition-colors"
+          on:click={() => fetchPhotos()}
         >
-          <img 
-            src={image.src} 
-            alt={image.alt}
-            class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-            loading="lazy"
-          />
-          <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-            <div class="text-white">
-              <h3 class="font-semibold">{image.title}</h3>
-              <p class="text-sm text-gray-200">{image.category}</p>
-            </div>
-          </div>
-        </div>
-      {/each}
-    </div>
-    
-    <!-- Empty state if no images match filter -->
-    {#if filteredImages.length === 0}
+          Try Again
+        </button>
+      </div>
+    <!-- Empty State -->
+    {:else if filteredImages.length === 0}
       <div class="text-center py-12">
         <p class="text-text-muted text-lg">No images found in this category.</p>
         <button 
@@ -320,11 +391,74 @@
           View All Images
         </button>
       </div>
+    <!-- Gallery Grid -->
+    {:else}
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        {#each filteredImages as image}
+          <div 
+            class="group relative overflow-hidden rounded-lg cursor-pointer aspect-square"
+            on:click={() => openLightbox(image)}
+            on:keydown={(e) => e.key === 'Enter' && openLightbox(image)}
+            tabindex="0"
+            role="button"
+            aria-label={`View ${image.title}`}
+          >
+            <img 
+              src={image.src} 
+              alt={image.alt}
+              class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              loading="lazy"
+            />
+            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+              <div class="text-white">
+                <h3 class="font-semibold">{image.title}</h3>
+                <p class="text-sm text-gray-200">{image.photographerName}</p>
+              </div>
+            </div>
+          </div>
+        {/each}
+      </div>
+      
+      <!-- Pagination -->
+      {#if totalPages > 1}
+        <div class="flex justify-center items-center mt-12 gap-2">
+          <button 
+            class="w-10 h-10 rounded-full flex items-center justify-center bg-white text-text-dark hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            on:click={() => goToPage(currentPage - 1)}
+            disabled={currentPage === 1}
+            aria-label="Previous page"
+          >
+            <i class="fas fa-chevron-left"></i>
+          </button>
+          
+          {#each Array(totalPages) as _, i}
+            {#if i + 1 === 1 || i + 1 === totalPages || (i + 1 >= currentPage - 1 && i + 1 <= currentPage + 1)}
+              <button 
+                class={`w-10 h-10 rounded-full flex items-center justify-center ${i + 1 === currentPage ? 'bg-primary text-white' : 'bg-white text-text-dark hover:bg-gray-100'}`}
+                on:click={() => goToPage(i + 1)}
+              >
+                {i + 1}
+              </button>
+            {:else if (i + 1 === currentPage - 2 || i + 1 === currentPage + 2) && totalPages > 5}
+              <span class="px-1">...</span>
+            {/if}
+          {/each}
+          
+          <button 
+            class="w-10 h-10 rounded-full flex items-center justify-center bg-white text-text-dark hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+            on:click={() => goToPage(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            aria-label="Next page"
+          >
+            <i class="fas fa-chevron-right"></i>
+          </button>
+        </div>
+      {/if}
     {/if}
   </div>
 </section>
 
-<!-- Lightbox -->
+<!-- Enhanced Lightbox -->
 {#if isLightboxOpen && lightboxImage}
   <div 
     class="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
@@ -348,7 +482,13 @@
       />
       <div class="mt-4 text-white">
         <h3 class="text-xl font-semibold">{lightboxImage.title}</h3>
-        <p class="text-gray-300">{lightboxImage.category}</p>
+        {#if lightboxImage.description}
+          <p class="text-gray-300 mt-1">{lightboxImage.description}</p>
+        {/if}
+        <div class="flex justify-between items-center mt-2">
+          <p class="text-gray-400">Photo by: {lightboxImage.photographerName}</p>
+          <span class="px-3 py-1 bg-primary/80 text-white text-xs rounded-full">{lightboxImage.category}</span>
+        </div>
       </div>
       <button 
         class="absolute top-4 right-4 text-white bg-black/50 hover:bg-black/70 w-10 h-10 rounded-full flex items-center justify-center transition-colors"
