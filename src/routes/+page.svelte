@@ -235,51 +235,6 @@
   </div>
 </section>
 
-<!-- Testimonials Section -->
-<section class="py-20 bg-white">
-  <div class="container max-w-7xl mx-auto px-8">
-    <h2 class="text-4xl text-center mb-1 text-text-dark">Client Testimonials</h2>
-    <p class="text-center text-lg text-text-muted mb-12">What our clients say about us</p>
-    
-    <div class="relative flex items-center max-w-4xl mx-auto">
-      <button class="bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center border-none cursor-pointer z-10 transition-colors hover:bg-primary-dark" on:click={prevTestimonial} aria-label="Previous testimonial">
-        <i class="fas fa-chevron-left"></i>
-      </button>
-      
-      <div class="relative flex-1 overflow-hidden h-[300px]">
-        {#each testimonials as testimonial, i}
-          <div class={`absolute top-0 left-0 w-full h-full flex items-center justify-center transition-opacity duration-500 ${i === currentTestimonialIndex ? 'opacity-100' : 'opacity-0'}`}>
-            <div class="bg-white p-8 rounded-lg shadow-card text-center max-w-xl">
-              <div class="text-4xl text-primary mb-4">
-                <i class="fas fa-quote-left"></i>
-              </div>
-              <p class="text-lg leading-relaxed text-text-light italic mb-6">{testimonial.quote}</p>
-              <div class="flex items-center justify-center gap-4">
-                <img src={testimonial.image} alt={testimonial.name} class="w-16 h-16 rounded-full object-cover" />
-                <span class="font-semibold text-text-dark">{testimonial.name}</span>
-              </div>
-            </div>
-          </div>
-        {/each}
-      </div>
-      
-      <button class="bg-primary text-white w-10 h-10 rounded-full flex items-center justify-center border-none cursor-pointer z-10 transition-colors hover:bg-primary-dark" on:click={nextTestimonial} aria-label="Next testimonial">
-        <i class="fas fa-chevron-right"></i>
-      </button>
-    </div>
-    
-    <div class="flex justify-center gap-2 mt-8">
-      {#each testimonials as _, i}
-        <button 
-          class={`w-3 h-3 rounded-full border-none cursor-pointer transition-colors ${i === currentTestimonialIndex ? 'bg-primary' : 'bg-gray-300'}`}
-          on:click={() => currentTestimonialIndex = i}
-          aria-label={`Go to testimonial ${i + 1}`}
-        ></button>
-      {/each}
-    </div>
-  </div>
-</section>
-
 <!-- Call to Action Section -->
 <section class="py-20 bg-cover bg-center text-white text-center" style="background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://source.unsplash.com/random/1920x1080?camera');">
   <div class="container max-w-7xl mx-auto px-8">
