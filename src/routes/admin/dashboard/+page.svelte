@@ -8,12 +8,13 @@
   // User store for authentication
   const user = writable(null);
   
-  // State management
+  // State management - add about to the active tabs
   let activeTab = 'bookings';
   let isLoading = {
     bookings: true,
     services: true,
-    photos: true
+    photos: true,
+    about: true
   };
   
   // Data stores
@@ -43,16 +44,51 @@
     isActive: true
   };
   
+  // Add about content data
+  let aboutContent = null;
+  let socialMedia = [];
+  let contactInfo = null;
+  
+  // Add form data for about page editing
+  let aboutForm = {
+    id: null,
+    title: '',
+    content: '',
+    isActive: true
+  };
+  
+  let contactForm = {
+    id: null,
+    email: '',
+    phone: '',
+    address: '',
+    businessHours: '',
+    isActive: true
+  };
+  
+  let socialMediaForm = {
+    id: null,
+    platform: '',
+    url: '',
+    icon: '',
+    isActive: true
+  };
+  
   // UI state
   let showPhotoForm = false;
   let showServiceForm = false;
   let showAssignForm = false;
+  let showAboutForm = false; // Added missing variable
+  let showContactForm = false; // Added missing variable
+  let showSocialMediaForm = false; // Added missing variable
   let showDeletePhotoModal = false;
   let showDeleteServiceModal = false; // New state for delete service modal
   let selectedBooking = null;
   let selectedPhotographer = null;
   let photoToDelete = null; // New state to track which photo to delete
   let serviceToDelete = null; // New state to track which service to delete
+  let socialMediaToDelete = null;
+  let showDeleteSocialMediaModal = false;
   let statusOptions = ['pending', 'confirmed', 'completed', 'cancelled'];
   let photoTypes = ['portrait', 'wedding', 'event', 'commercial', 'landscape', 'family', 'other'];
   
@@ -109,6 +145,13 @@
         
         // Add this function to reprocess bookings after photographers are loaded
         processBookingsWithPhotographers();
+        
+        // Load about page data
+        try {
+          await fetchAboutData();
+        } catch (e) {
+          console.error('Error loading about data:', e);
+        }
         
       } catch (e) {
         console.error('Error parsing token or loading data', e);
@@ -518,6 +561,32 @@
     showAssignForm = true;
   }
   
+  // Helper functions for About page
+  function editAboutContent() {
+    aboutForm = { ...aboutContent };
+    showAboutForm = true;
+  }
+  
+  function editContactInfo() {
+    contactForm = { ...contactInfo };
+    showContactForm = true;
+  }
+  
+  function editSocialMedia(social) {
+    socialMediaForm = { ...social };
+    showSocialMediaForm = true;
+  }
+  
+  function addSocialMedia() {
+    resetSocialMediaForm();
+    showSocialMediaForm = true;
+  }
+  
+  function confirmDeleteSocialMedia(social) {
+    socialMediaToDelete = social;
+    showDeleteSocialMediaModal = true;
+  }
+  
   // Reset photo form
   function resetPhotoForm() {
     photoForm = {
@@ -543,6 +612,294 @@
       isActive: true
     };
     showServiceForm = false;
+  }
+  
+  function resetSocialMediaForm() {
+    socialMediaForm = {
+      id: null,
+      platform: '',
+      url: '',
+      icon: '',
+      isActive: true
+    };
+  }
+  
+  function resetAboutForm() {
+    aboutForm = {
+      id: null,
+      title: '',
+      content: '',
+      isActive: true
+    };
+    showAboutForm = false;
+  }
+  
+  function resetContactForm() {
+    contactForm = {
+      id: null,
+      email: '',
+      phone: '',
+      address: '',
+      businessHours: '',
+      isActive: true
+    };
+    showContactForm = false;
+  }
+  
+  // Fetch about data
+  async function fetchAboutData() {
+    isLoading.about = true;
+    try {
+      // Use the complete endpoint to get all data
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/about/complete', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        aboutContent = data.about;
+        socialMedia = data.socialMedia || [];
+        contactInfo = data.contact;
+        console.log('Loaded about data:', data);
+      } else {
+        // If complete endpoint fails, try individual endpoints
+        await Promise.all([
+          fetchAboutContent(),
+          fetchSocialMedia(),
+          fetchContactInfo()
+        ]);
+      }
+    } catch (err) {
+      console.error('Error fetching about data:', err);
+      toast.error('Failed to load about page data');
+      
+      // Try individual endpoints as fallback
+      try {
+        await Promise.all([
+          fetchAboutContent(),
+          fetchSocialMedia(),
+          fetchContactInfo()
+        ]);
+      } catch (e) {
+        console.error('All about data fetches failed');
+      }
+    } finally {
+      isLoading.about = false;
+    }
+  }
+  
+  // Individual fetch functions for about data
+  async function fetchAboutContent() {
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:3000/api/about', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      aboutContent = await response.json();
+    }
+  }
+  
+  async function fetchSocialMedia() {
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:3000/api/about/social', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        socialMedia = data.socialMedia || [];
+      }
+    }
+  }
+  
+  async function fetchContactInfo() {
+    const token = localStorage.getItem('token');
+    const response = await fetch('http://localhost:3000/api/about/contact', {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (response.ok) {
+      const data = await response.json();
+      if (data.success) {
+        contactInfo = data.contactInfo;
+      }
+    }
+  }
+  
+  // Save about content
+  async function saveAboutContent() {
+    try {
+      const token = localStorage.getItem('token');
+      const isEditing = !!aboutForm.id;
+      
+      const url = isEditing 
+        ? `http://localhost:3000/api/about/${aboutForm.id}`
+        : 'http://localhost:3000/api/about';
+      
+      const response = await fetch(url, {
+        method: isEditing ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          title: aboutForm.title,
+          content: aboutForm.content,
+          isActive: aboutForm.isActive
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} about content`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success || result.aboutPage) {
+        aboutContent = result.aboutPage || aboutForm;
+        showAboutForm = false;
+        toast.success(`About content ${isEditing ? 'updated' : 'created'} successfully`);
+      }
+    } catch (error) {
+      console.error('Error saving about content:', error);
+      toast.error(error.message);
+    }
+  }
+  
+  // Save contact info
+  async function saveContactInfo() {
+    try {
+      const token = localStorage.getItem('token');
+      const isEditing = !!contactForm.id;
+      
+      const url = isEditing 
+        ? `http://localhost:3000/api/about/contact/${contactForm.id}`
+        : 'http://localhost:3000/api/about/contact';
+      
+      const response = await fetch(url, {
+        method: isEditing ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          email: contactForm.email,
+          phone: contactForm.phone,
+          address: contactForm.address,
+          businessHours: contactForm.businessHours,
+          makeActive: true
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} contact information`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success || result.contactInfo) {
+        contactInfo = result.contactInfo || contactForm;
+        showContactForm = false;
+        toast.success(`Contact information ${isEditing ? 'updated' : 'created'} successfully`);
+      }
+    } catch (error) {
+      console.error('Error saving contact info:', error);
+      toast.error(error.message);
+    }
+  }
+  
+  // Save social media
+  async function saveSocialMedia() {
+    try {
+      const token = localStorage.getItem('token');
+      const isEditing = !!socialMediaForm.id;
+      
+      const url = isEditing 
+        ? `http://localhost:3000/api/about/social/${socialMediaForm.id}`
+        : 'http://localhost:3000/api/about/social';
+      
+      const response = await fetch(url, {
+        method: isEditing ? 'PATCH' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          platform: socialMediaForm.platform,
+          url: socialMediaForm.url,
+          icon: socialMediaForm.icon,
+          isActive: socialMediaForm.isActive
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} social media link`);
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        if (isEditing) {
+          socialMedia = socialMedia.map(item => 
+            item.id === socialMediaForm.id ? result.socialMedia : item
+          );
+        } else {
+          socialMedia = [...socialMedia, result.socialMedia];
+        }
+        
+        showSocialMediaForm = false;
+        toast.success(`Social media link ${isEditing ? 'updated' : 'added'} successfully`);
+        resetSocialMediaForm();
+      }
+    } catch (error) {
+      console.error('Error saving social media link:', error);
+      toast.error(error.message);
+    }
+  }
+  
+  // Delete social media
+  async function deleteSocialMedia(id) {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`http://localhost:3000/api/about/social/${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to delete social media link');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        socialMedia = socialMedia.filter(item => item.id !== id);
+        toast.success('Social media link deleted successfully');
+        showDeleteSocialMediaModal = false;
+        socialMediaToDelete = null;
+      }
+    } catch (error) {
+      console.error('Error deleting social media:', error);
+      toast.error(error.message);
+    }
   }
   
   // Format date for display
@@ -629,7 +986,7 @@
     
     <!-- Dashboard Tabs -->
     <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
-      <div class="flex border-b">
+      <div class="flex border-b overflow-x-auto">
         <button 
           class={`px-6 py-3 text-lg font-medium ${activeTab === 'bookings' ? 'bg-primary text-white' : 'text-text-dark hover:bg-gray-100'}`}
           on:click={() => activeTab = 'bookings'}
@@ -647,6 +1004,12 @@
           on:click={() => activeTab = 'photos'}
         >
           Gallery Photos
+        </button>
+        <button 
+          class={`px-6 py-3 text-lg font-medium ${activeTab === 'about' ? 'bg-primary text-white' : 'text-text-dark hover:bg-gray-100'}`}
+          on:click={() => activeTab = 'about'}
+        >
+          About Page
         </button>
       </div>
       
@@ -672,6 +1035,7 @@
                     <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Client</th>
                     <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Service</th>
                     <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Date & Time</th>
+                    <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Location</th>
                     <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Status</th>
                     <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Photographer</th>
                     <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Actions</th>
@@ -705,6 +1069,13 @@
                       <td class="py-3 px-4 text-sm">
                         <div>{formatDate(booking.date)}</div>
                         <div class="text-text-muted">{booking.time}</div>
+                      </td>
+                      <td class="py-3 px-4 text-sm">
+                        {#if booking.location}
+                          {booking.location}
+                        {:else}
+                          <span class="text-gray-400 italic">Not specified</span>
+                        {/if}
                       </td>
                       <td class="py-3 px-4">
                         <span class={`inline-block px-3 py-1 rounded-full text-xs font-semibold text-white ${getStatusClass(booking.status)}`}>
@@ -862,6 +1233,189 @@
                   </div>
                 </div>
               {/each}
+            </div>
+          {/if}
+        </div>
+      {/if}
+      
+      <!-- About Page Tab -->
+      {#if activeTab === 'about'}
+        <div class="p-6">
+          <h2 class="text-2xl font-bold text-text-dark mb-6">Manage About Page</h2>
+          
+          {#if isLoading.about}
+            <div class="flex justify-center py-12">
+              <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          {:else}
+            <!-- About Content Section -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8 border">
+              <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <div>
+                  <h3 class="text-lg leading-6 font-medium text-gray-900">About Content</h3>
+                  <p class="mt-1 max-w-2xl text-sm text-gray-500">Main information about your business</p>
+                </div>
+                <button 
+                  on:click={editAboutContent} 
+                  class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
+                  aria-label="Edit About Content"
+                >
+                  Edit Content
+                </button>
+              </div>
+              
+              {#if aboutContent}
+                <div class="border-t border-gray-200">
+                  <dl>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt class="text-sm font-medium text-gray-500">Title</dt>
+                      <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{aboutContent.title}</dd>
+                    </div>
+                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt class="text-sm font-medium text-gray-500">Content</dt>
+                      <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
+                        <div class="prose prose-sm max-w-none">
+                          {@html aboutContent.content}
+                        </div>
+                      </dd>
+                    </div>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt class="text-sm font-medium text-gray-500">Status</dt>
+                      <dd class="mt-1 text-sm sm:mt-0 sm:col-span-2">
+                        <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${aboutContent.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                          {aboutContent.isActive ? 'Active' : 'Inactive'}
+                        </span>
+                      </dd>
+                    </div>
+                  </dl>
+                </div>
+              {:else}
+                <div class="border-t border-gray-200 px-4 py-5 sm:px-6 text-center text-gray-500">
+                  <p>No about content found. Click "Edit Content" to add information.</p>
+                </div>
+              {/if}
+            </div>
+            
+            <!-- Contact Information Section -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg mb-8 border">
+              <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <div>
+                  <h3 class="text-lg leading-6 font-medium text-gray-900">Contact Information</h3>
+                  <p class="mt-1 max-w-2xl text-sm text-gray-500">How customers can reach you</p>
+                </div>
+                <button 
+                  on:click={editContactInfo} 
+                  class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
+                  aria-label="Edit Contact Information"
+                >
+                  Edit Contact
+                </button>
+              </div>
+              
+              {#if contactInfo}
+                <div class="border-t border-gray-200">
+                  <dl>
+                    <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt class="text-sm font-medium text-gray-500">Email</dt>
+                      <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{contactInfo.email}</dd>
+                    </div>
+                    <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                      <dt class="text-sm font-medium text-gray-500">Phone</dt>
+                      <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{contactInfo.phone}</dd>
+                    </div>
+                    {#if contactInfo.address}
+                      <div class="bg-gray-50 px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Address</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{contactInfo.address}</dd>
+                      </div>
+                    {/if}
+                    {#if contactInfo.businessHours}
+                      <div class="bg-white px-4 py-5 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
+                        <dt class="text-sm font-medium text-gray-500">Business Hours</dt>
+                        <dd class="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">{contactInfo.businessHours}</dd>
+                      </div>
+                    {/if}
+                  </dl>
+                </div>
+              {:else}
+                <div class="border-t border-gray-200 px-4 py-5 sm:px-6 text-center text-gray-500">
+                  <p>No contact information found. Click "Edit Contact" to add information.</p>
+                </div>
+              {/if}
+            </div>
+            
+            <!-- Social Media Section -->
+            <div class="bg-white shadow overflow-hidden sm:rounded-lg border">
+              <div class="px-4 py-5 sm:px-6 flex justify-between items-center">
+                <div>
+                  <h3 class="text-lg leading-6 font-medium text-gray-900">Social Media Links</h3>
+                  <p class="mt-1 max-w-2xl text-sm text-gray-500">Your social media presence</p>
+                </div>
+                <button 
+                  on:click={addSocialMedia} 
+                  class="bg-primary text-white px-4 py-2 rounded-md hover:bg-primary-dark transition-colors"
+                  aria-label="Add Social Media Link"
+                >
+                  Add Social Link
+                </button>
+              </div>
+              
+              {#if socialMedia && socialMedia.length > 0}
+                <div class="border-t border-gray-200">
+                  <ul class="divide-y divide-gray-200">
+                    {#each socialMedia as social}
+                      <li class="px-4 py-4 sm:px-6">
+                        <div class="flex justify-between items-center">
+                          <div class="flex items-center">
+                            <i class="fab fa-{social.icon.toLowerCase()} text-2xl text-primary mr-3"></i>
+                            <div>
+                              <h4 class="text-lg font-medium">{social.platform}</h4>
+                              <a href={social.url} target="_blank" rel="noopener noreferrer" class="text-sm text-primary hover:underline">{social.url}</a>
+                              <div class="mt-1">
+                                <span class={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${social.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                  {social.isActive ? 'Active' : 'Inactive'}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                          <div class="flex space-x-2">
+                            <button 
+                              on:click={() => editSocialMedia(social)} 
+                              class="text-primary hover:text-primary-dark"
+                              aria-label={`Edit ${social.platform} social media link`}
+                            >
+                              <i class="fas fa-edit"></i>
+                              <span class="sr-only">Edit</span>
+                            </button>
+                            <button 
+                              on:click={() => confirmDeleteSocialMedia(social)} 
+                              class="text-red-600 hover:text-red-800"
+                              aria-label={`Delete ${social.platform} social media link`}
+                            >
+                              <i class="fas fa-trash"></i>
+                              <span class="sr-only">Delete</span>
+                            </button>
+                          </div>
+                        </div>
+                      </li>
+                    {/each}
+                  </ul>
+                </div>
+              {:else}
+                <div class="border-t border-gray-200 px-4 py-5 sm:px-6 text-center text-gray-500">
+                  <p>No social media links found. Add some using the button above.</p>
+                </div>
+              {/if}
+            </div>
+            
+            <div class="mt-8 flex justify-end">
+              <button 
+                on:click={fetchAboutData} 
+                class="bg-gray-100 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-200 transition-colors"
+                aria-label="Refresh About Page Data"
+              >
+                Refresh Data
+              </button>
             </div>
           {/if}
         </div>
@@ -1197,6 +1751,256 @@
           class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
         >
           Delete Service
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
+
+<!-- About Content Modal -->
+{#if showAboutForm}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-3xl mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">
+        {aboutForm.id ? 'Edit About Content' : 'Add About Content'}
+      </h3>
+      
+      <form on:submit|preventDefault={saveAboutContent} class="space-y-4">
+        <div>
+          <label for="title" class="block text-sm font-medium text-gray-700 mb-1">Title</label>
+          <input 
+            type="text" 
+            id="title" 
+            bind:value={aboutForm.title} 
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+          />
+        </div>
+        
+        <div>
+          <label for="content" class="block text-sm font-medium text-gray-700 mb-1">Content (HTML allowed)</label>
+          <textarea 
+            id="content" 
+            bind:value={aboutForm.content}
+            rows="15" 
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+          ></textarea>
+          <p class="text-xs text-gray-500 mt-1">You can use HTML tags to format your content (headings, paragraphs, lists, etc.)</p>
+        </div>
+        
+        <div class="flex items-center">
+          <input 
+            type="checkbox" 
+            id="isActive" 
+            bind:checked={aboutForm.isActive}
+            class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+          />
+          <label for="isActive" class="ml-2 block text-sm text-gray-700">Content is active</label>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-2">
+          <button 
+            type="button" 
+            on:click={resetAboutForm}
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+          >
+            {aboutForm.id ? 'Update' : 'Save'} Content
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
+<!-- Contact Information Modal -->
+{#if showContactForm}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">
+        {contactForm.id ? 'Edit Contact Information' : 'Add Contact Information'}
+      </h3>
+      
+      <form on:submit|preventDefault={saveContactInfo} class="space-y-4">
+        <div>
+          <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+          <input 
+            type="email" 
+            id="email" 
+            bind:value={contactForm.email} 
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+          />
+        </div>
+        
+        <div>
+          <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+          <input 
+            type="text" 
+            id="phone" 
+            bind:value={contactForm.phone} 
+            required
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+          />
+        </div>
+        
+        <div>
+          <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+          <textarea 
+            id="address" 
+            bind:value={contactForm.address}
+            rows="2" 
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary resize-none"
+          ></textarea>
+        </div>
+        
+        <div>
+          <label for="businessHours" class="block text-sm font-medium text-gray-700 mb-1">Business Hours</label>
+          <textarea 
+            id="businessHours" 
+            bind:value={contactForm.businessHours}
+            rows="2" 
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary resize-none"
+            placeholder="e.g. Monday-Friday: 9am-5pm, Weekends: 10am-2pm"
+          ></textarea>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-2">
+          <button 
+            type="button" 
+            on:click={resetContactForm}
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+          >
+            {contactForm.id ? 'Update' : 'Save'} Contact Info
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
+<!-- Social Media Modal -->
+{#if showSocialMediaForm}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">
+        {socialMediaForm.id ? 'Edit Social Media Link' : 'Add Social Media Link'}
+      </h3>
+      
+      <form on:submit|preventDefault={saveSocialMedia} class="space-y-4">
+        <div>
+          <label for="platform" class="block text-sm font-medium text-gray-700 mb-1">Platform</label>
+          <input 
+            type="text" 
+            id="platform" 
+            bind:value={socialMediaForm.platform} 
+            required
+            placeholder="Facebook, Instagram, Twitter, etc."
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+          />
+        </div>
+        
+        <div>
+          <label for="url" class="block text-sm font-medium text-gray-700 mb-1">URL</label>
+          <input 
+            type="url" 
+            id="url" 
+            bind:value={socialMediaForm.url} 
+            required
+            placeholder="https://example.com"
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+          />
+        </div>
+        
+        <div>
+          <label for="icon" class="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+          <input 
+            type="text" 
+            id="icon" 
+            bind:value={socialMediaForm.icon}
+            required
+            placeholder="facebook, twitter, instagram, etc."
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+          />
+          <p class="text-xs text-gray-500 mt-1">Use the platform name in lowercase for FontAwesome icons</p>
+        </div>
+        
+        <div class="flex items-center">
+          <input 
+            type="checkbox" 
+            id="social-isActive" 
+            bind:checked={socialMediaForm.isActive}
+            class="h-4 w-4 text-primary focus:ring-primary border-gray-300 rounded"
+          />
+          <label for="social-isActive" class="ml-2 block text-sm text-gray-700">Active</label>
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-2">
+          <button 
+            type="button" 
+            on:click={() => showSocialMediaForm = false}
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+          >
+            {socialMediaForm.id ? 'Update' : 'Add'} Link
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+{/if}
+
+<!-- Delete Social Media Confirmation Modal -->
+{#if showDeleteSocialMediaModal && socialMediaToDelete}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Delete</h3>
+      
+      <div class="mb-6">
+        <p class="mb-4">Are you sure you want to delete this social media link?</p>
+        
+        <div class="bg-gray-50 p-4 rounded-md mb-4">
+          <div class="flex items-center space-x-4">
+            <i class="fab fa-{socialMediaToDelete.icon.toLowerCase()} text-3xl text-primary"></i>
+            <div>
+              <h4 class="font-medium text-gray-900">{socialMediaToDelete.platform}</h4>
+              <a href={socialMediaToDelete.url} target="_blank" rel="noopener noreferrer" class="text-sm text-primary hover:underline">{socialMediaToDelete.url}</a>
+            </div>
+          </div>
+        </div>
+        
+        <p class="text-sm text-red-600">This action cannot be undone.</p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          type="button"
+          on:click={() => { showDeleteSocialMediaModal = false; socialMediaToDelete = null; }}
+          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          on:click={() => deleteSocialMedia(socialMediaToDelete.id)}
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        >
+          Delete Link
         </button>
       </div>
     </div>

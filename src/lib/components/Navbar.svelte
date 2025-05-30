@@ -15,10 +15,6 @@
     if (!$page.url) return false;
     
     // Exact matching for specific routes
-    if (path === '/pricing') {
-      return $page.url.pathname === '/pricing';
-    }
-    
     if (path === '/about') {
       return $page.url.pathname === '/about';
     }
@@ -68,6 +64,13 @@
         on:click={closeMenu}
       >
         Services
+      </a>
+      <a 
+        href="/about" 
+        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/about' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        on:click={closeMenu}
+      >
+        About
       </a>
       <a 
         href="/book" 
