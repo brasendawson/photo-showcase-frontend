@@ -5,8 +5,15 @@
   import toast from 'svelte-5-french-toast';
   import { writable } from 'svelte/store';
 
-  // User store for authentication
+  // User store for authentication - defined at top level
   const user = writable(null);
+  // Create a local variable to hold user data for use in template
+  let userData = null;
+  
+  // Subscribe to the user store at top level to avoid the error
+  $: if ($user) {
+    userData = $user;
+  }
   
   // State management - add about to the active tabs
   let activeTab = 'bookings';
@@ -14,7 +21,8 @@
     bookings: true,
     services: true,
     photos: true,
-    about: true
+    about: true,
+    users: true
   };
   
   // Data stores
@@ -23,6 +31,9 @@
   let photos = [];
   // Update photographers to empty array - we'll fetch from API
   let photographers = [];
+  
+  // Add users data store
+  let users = [];
   
   // Form data for new/edit items
   let photoForm = {
@@ -74,6 +85,12 @@
     isActive: true
   };
   
+  // Add form data for role update
+  let roleUpdateForm = {
+    username: '',
+    newRole: 'photographer'
+  };
+  
   // UI state
   let showPhotoForm = false;
   let showServiceForm = false;
@@ -91,6 +108,9 @@
   let showDeleteSocialMediaModal = false;
   let statusOptions = ['pending', 'confirmed', 'completed', 'cancelled'];
   let photoTypes = ['portrait', 'wedding', 'event', 'commercial', 'landscape', 'family', 'other'];
+  let showRoleUpdateForm = false;
+  let selectedUser = null;
+  let availableRoles = ['client', 'photographer', 'admin'];
   
   // Check admin access and load data
   onMount(async () => {
@@ -111,6 +131,7 @@
           return;
         }
         
+        // Set user data in the store
         user.set({
           id: tokenData.userId,
           username: tokenData.username,
@@ -151,6 +172,13 @@
           await fetchAboutData();
         } catch (e) {
           console.error('Error loading about data:', e);
+        }
+        
+        // Load users data
+        try {
+          await fetchAllUsers();
+        } catch (e) {
+          console.error('Error loading users:', e);
         }
         
       } catch (e) {
@@ -926,6 +954,114 @@
     }
   }
   
+  // Fetch all users (admin only)
+  async function fetchAllUsers() {
+    isLoading.users = true;
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:3000/api/admin/users', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch users');
+      }
+      
+      const data = await response.json();
+      
+      if (!data.success || !Array.isArray(data.users)) {
+        throw new Error('Invalid API response format');
+      }
+      
+      users = data.users;
+      console.log('Loaded users:', users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast.error('Failed to load users');
+    } finally {
+      isLoading.users = false;
+    }
+  }
+  
+  // Update user role (admin only)
+  async function updateUserRole() {
+    try {
+      const token = localStorage.getItem('token');
+      
+      if (!roleUpdateForm.username || !roleUpdateForm.newRole) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      
+      const response = await fetch('http://localhost:3000/api/admin/users/role', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          username: roleUpdateForm.username,
+          newRole: roleUpdateForm.newRole
+        })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to update user role');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        // Update the user in the local users array
+        users = users.map(user => {
+          if (user.username === roleUpdateForm.username) {
+            return { ...user, role: roleUpdateForm.newRole };
+          }
+          return user;
+        });
+        
+        showRoleUpdateForm = false;
+        toast.success('User role updated successfully');
+        resetRoleUpdateForm();
+      }
+    } catch (error) {
+      console.error('Error updating user role:', error);
+      toast.error(error.message || 'An unexpected error occurred');
+    }
+  }
+  
+  // Reset role update form
+  function resetRoleUpdateForm() {
+    roleUpdateForm = {
+      username: '',
+      newRole: 'photographer'
+    };
+    selectedUser = null;
+  }
+  
+  // Open role update form for a specific user
+  function openRoleUpdateForm(userItem) {
+    selectedUser = userItem;
+    roleUpdateForm = {
+      username: userItem.username,
+      newRole: userItem.role
+    };
+    showRoleUpdateForm = true;
+  }
+  
+  // Modify the function to get role badge class
+  function getRoleBadgeClass(role) {
+    switch (role.toLowerCase()) {
+      case 'admin': return 'bg-red-100 text-red-800';
+      case 'photographer': return 'bg-blue-100 text-blue-800';
+      case 'client': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  }
+  
   // New function to fetch photographers from admin/users endpoint with error handling
   async function fetchPhotographers() {
     try {
@@ -976,15 +1112,15 @@
   <div class="max-w-7xl mx-auto px-4">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold text-text-dark">Admin Dashboard</h1>
-      {#if $user}
+      {#if userData}
         <div class="flex items-center">
-          <span class="mr-2 text-text-muted">Welcome, {$user.username}</span>
+          <span class="mr-2 text-text-muted">Welcome, {userData.username}</span>
           <span class="px-3 py-1 bg-primary text-white rounded-full text-sm">Admin</span>
         </div>
       {/if}
     </div>
     
-    <!-- Dashboard Tabs -->
+    <!-- Dashboard Tabs - Add Users tab -->
     <div class="bg-white rounded-lg shadow-md overflow-hidden mb-8">
       <div class="flex border-b overflow-x-auto">
         <button 
@@ -1010,6 +1146,12 @@
           on:click={() => activeTab = 'about'}
         >
           About Page
+        </button>
+        <button 
+          class={`px-6 py-3 text-lg font-medium ${activeTab === 'users' ? 'bg-primary text-white' : 'text-text-dark hover:bg-gray-100'}`}
+          on:click={() => activeTab = 'users'}
+        >
+          Users
         </button>
       </div>
       
@@ -1416,6 +1558,69 @@
               >
                 Refresh Data
               </button>
+            </div>
+          {/if}
+        </div>
+      {/if}
+      
+      <!-- Users Tab -->
+      {#if activeTab === 'users'}
+        <div class="p-6">
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-text-dark">Manage Users</h2>
+            <button 
+              on:click={fetchAllUsers}
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center"
+            >
+              <i class="fas fa-sync-alt mr-2"></i> Refresh
+            </button>
+          </div>
+          
+          {#if isLoading.users}
+            <div class="flex justify-center py-12">
+              <div class="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+            </div>
+          {:else if users.length === 0}
+            <div class="bg-gray-50 py-8 px-6 rounded-lg text-center">
+              <p class="text-text-muted text-lg">No users found</p>
+            </div>
+          {:else}
+            <div class="overflow-x-auto">
+              <table class="min-w-full bg-white">
+                <thead>
+                  <tr class="bg-gray-100 border-b">
+                    <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">ID</th>
+                    <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Username</th>
+                    <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Email</th>
+                    <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Role</th>
+                    <th class="py-3 px-4 text-left text-sm font-medium text-text-dark">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {#each users as userItem}
+                    <tr class="border-b hover:bg-gray-50">
+                      <td class="py-3 px-4 text-sm">{userItem.id}</td>
+                      <td class="py-3 px-4 font-medium text-text-dark">{userItem.username}</td>
+                      <td class="py-3 px-4 text-sm text-text-muted">{userItem.email}</td>
+                      <td class="py-3 px-4">
+                        <span class={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleBadgeClass(userItem.role)}`}>
+                          {userItem.role}
+                        </span>
+                      </td>
+                      <td class="py-3 px-4">
+                        <button 
+                          on:click={() => openRoleUpdateForm(userItem)}
+                          class="px-3 py-1 bg-blue-100 text-blue-600 rounded hover:bg-blue-200 text-xs font-medium"
+                          disabled={userItem.role === 'admin' && userData?.username === userItem.username}
+                          title={userItem.role === 'admin' && userData?.username === userItem.username ? "You can't change your own admin role" : "Change role"}
+                        >
+                          Change Role
+                        </button>
+                      </td>
+                    </tr>
+                  {/each}
+                </tbody>
+              </table>
             </div>
           {/if}
         </div>
@@ -2003,6 +2208,64 @@
           Delete Link
         </button>
       </div>
+    </div>
+  </div>
+{/if}
+
+<!-- Role Update Modal -->
+{#if showRoleUpdateForm && selectedUser}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">
+        Update User Role
+      </h3>
+      
+      <div class="mb-4 p-3 bg-gray-50 rounded-md">
+        <p class="text-sm text-gray-500">User:</p>
+        <p class="font-medium">{selectedUser.username}</p>
+        <p class="text-sm text-gray-500">{selectedUser.email}</p>
+        <p class="text-sm mt-1">
+          Current Role: 
+          <span class={`px-2 py-1 rounded-full text-xs font-semibold ${getRoleBadgeClass(selectedUser.role)}`}>
+            {selectedUser.role}
+          </span>
+        </p>
+      </div>
+      
+      <form on:submit|preventDefault={updateUserRole} class="space-y-4">
+        <div>
+          <label for="newRole" class="block text-sm font-medium text-gray-700 mb-1">New Role</label>
+          <select 
+            id="newRole" 
+            bind:value={roleUpdateForm.newRole} 
+            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white"
+          >
+            {#each availableRoles as role}
+              <option value={role}>{role}</option>
+            {/each}
+          </select>
+          {#if roleUpdateForm.newRole === 'admin'}
+            <p class="text-xs text-amber-600 mt-1">Warning: Admins have full access to all dashboard features.</p>
+          {/if}
+        </div>
+        
+        <div class="flex justify-end space-x-3 pt-2">
+          <button 
+            type="button" 
+            on:click={() => { showRoleUpdateForm = false; resetRoleUpdateForm(); }}
+            class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+          >
+            Cancel
+          </button>
+          <button 
+            type="submit"
+            class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+            disabled={roleUpdateForm.newRole === selectedUser.role}
+          >
+            Update Role
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 {/if}

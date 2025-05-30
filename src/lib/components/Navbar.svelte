@@ -46,38 +46,38 @@
       </span>
     </button>
     
-    <div class={`${isMenuOpen ? 'flex flex-col absolute top-16 left-0 w-full bg-black/90 py-8 z-50 h-[calc(100vh-4rem)]' : 'hidden'} md:flex md:items-center md:gap-8 md:static md:h-auto md:bg-transparent md:py-0 md:w-auto md:flex-row`}>
+    <div class={`${isMenuOpen ? 'flex flex-col absolute top-16 left-0 w-full bg-black/90 py-12 z-50 h-[calc(100vh-4rem)]' : 'hidden'} md:flex md:items-center md:gap-8 md:static md:h-auto md:bg-transparent md:py-0 md:w-auto md:flex-row`}>
       <a 
         href="/" 
-        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isMenuOpen ? 'text-white text-xl font-medium py-6 mb-4 w-full text-center' : isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         Home
       </a>
       <a 
         href="/gallery" 
-        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/gallery' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isMenuOpen ? 'text-white text-xl font-medium py-6 mb-4 w-full text-center' : isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/gallery' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         Gallery
       </a>
       <a 
         href="/services" 
-        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/services' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isMenuOpen ? 'text-white text-xl font-medium py-6 mb-4 w-full text-center' : isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/services' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         Services
       </a>
       <a 
         href="/about" 
-        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/about' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isMenuOpen ? 'text-white text-xl font-medium py-6 mb-4 w-full text-center' : isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/about' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         About
       </a>
       <a 
         href="/book" 
-        class={`bg-primary text-white py-2 px-5 rounded font-semibold hover:bg-primary-dark transition-colors duration-300 ${$page.url.pathname === '/book' ? 'bg-primary-dark' : ''}`}
+        class={`${isMenuOpen ? 'mt-6 mx-auto text-lg py-3 px-8' : 'py-2 px-5'} bg-primary text-white rounded font-semibold hover:bg-primary-dark transition-colors duration-300 ${$page.url.pathname === '/book' ? 'bg-primary-dark' : ''}`}
         on:click={closeMenu}
       >
         Book Now
