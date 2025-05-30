@@ -162,7 +162,7 @@
         <p class="mb-6 leading-relaxed text-text-light">We are passionate about freezing time through our lenses. With years of experience and a creative eye, we transform ordinary moments into extraordinary memories.</p>
         <p class="mb-6 leading-relaxed text-text-light">Our approach combines technical expertise with artistic vision to deliver photographs that you'll cherish for a lifetime.</p>
         <div class="md:text-left text-center">
-          <a href="/services" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer text-primary border-2 border-primary bg-transparent hover:bg-primary hover:text-white">Our Approach</a>
+          <a href="/services" class="inline-block py-3 px-7 rounded font-semibold transition-all duration-300 cursor-pointer text-primary border-2 border-primary bg-transparent hover:bg-primary hover:text-white">Our Services</a>
         </div>
       </div>
       <div class="flex-1 md:order-2 order-1">

@@ -23,12 +23,15 @@
     return $page.url.pathname === path || 
            ($page.url.pathname.length > 1 && $page.url.pathname.startsWith(path + '/'));
   }
+  
+  // Check if we're on homepage or gallery page
+  $: isHomeOrGallery = $page.url.pathname === '/' || $page.url.pathname === '/gallery';
 </script>
 
 <nav class="fixed top-0 left-0 w-full bg-transparent z-[1000] py-4 transition-colors duration-300">
   <div class="max-w-7xl mx-auto flex justify-between items-center px-8 py-2">
     <div class="flex items-center">
-      <a href="/" on:click={closeMenu} class="text-white text-2xl font-bold tracking-wide">Capture Moments</a>
+      <a href="/" on:click={closeMenu} class={isHomeOrGallery ? "text-white text-2xl font-bold tracking-wide" : "text-gray-800 text-2xl font-bold tracking-wide"}>Capture Moments</a>
     </div>
     
     <button 
@@ -37,37 +40,37 @@
       aria-label="Toggle menu"
     >
       <span class="flex flex-col justify-between h-6 w-7 cursor-pointer">
-        <span class={`h-0.5 w-full bg-white rounded-lg transition-all duration-300 ${isMenuOpen ? 'transform translate-y-2.5 rotate-45' : ''}`}></span>
-        <span class={`h-0.5 w-full bg-white rounded-lg transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
-        <span class={`h-0.5 w-full bg-white rounded-lg transition-all duration-300 ${isMenuOpen ? 'transform -translate-y-2.5 -rotate-45' : ''}`}></span>
+        <span class={`h-0.5 w-full ${isHomeOrGallery ? 'bg-white' : 'bg-gray-800'} rounded-lg transition-all duration-300 ${isMenuOpen ? 'transform translate-y-2.5 rotate-45' : ''}`}></span>
+        <span class={`h-0.5 w-full ${isHomeOrGallery ? 'bg-white' : 'bg-gray-800'} rounded-lg transition-all duration-300 ${isMenuOpen ? 'opacity-0' : ''}`}></span>
+        <span class={`h-0.5 w-full ${isHomeOrGallery ? 'bg-white' : 'bg-gray-800'} rounded-lg transition-all duration-300 ${isMenuOpen ? 'transform -translate-y-2.5 -rotate-45' : ''}`}></span>
       </span>
     </button>
     
     <div class={`${isMenuOpen ? 'flex flex-col absolute top-16 left-0 w-full bg-black/90 py-8 z-50 h-[calc(100vh-4rem)]' : 'hidden'} md:flex md:items-center md:gap-8 md:static md:h-auto md:bg-transparent md:py-0 md:w-auto md:flex-row`}>
       <a 
         href="/" 
-        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         Home
       </a>
       <a 
         href="/gallery" 
-        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/gallery' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/gallery' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         Gallery
       </a>
       <a 
         href="/services" 
-        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/services' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/services' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         Services
       </a>
       <a 
         href="/about" 
-        class={`text-gray-200 hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/about' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
+        class={`${isHomeOrGallery ? 'text-gray-200' : 'text-gray-800'} hover:text-primary transition-colors duration-300 ${$page.url.pathname === '/about' ? 'text-primary relative after:content-[""] after:absolute after:-bottom-2 after:left-0 after:w-full after:h-0.5 after:bg-primary' : ''}`}
         on:click={closeMenu}
       >
         About
