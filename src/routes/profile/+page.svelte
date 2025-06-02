@@ -61,7 +61,7 @@
         throw new Error('Authentication required');
       }
       
-      const response = await fetch('http://localhost:3000/api/bookings/my-bookings', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/bookings/my-bookings', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -90,7 +90,7 @@
         return;
       }
       
-      const response = await fetch('http://localhost:3000/api/profile/picture', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/profile/picture', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -152,7 +152,7 @@
       const formData = new FormData();
       formData.append('profilePicture', selectedFile);
       
-      const response = await fetch('http://localhost:3000/api/profile/picture', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/profile/picture', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -199,7 +199,7 @@
         throw new Error('Authentication required');
       }
       
-      const response = await fetch('http://localhost:3000/api/profile/picture', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/profile/picture', {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -257,7 +257,7 @@
         throw new Error('Authentication required');
       }
       
-      const response = await fetch(`http://localhost:3000/api/bookings/my-bookings/${editingBooking.id}`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/bookings/my-bookings/${editingBooking.id}`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -309,7 +309,7 @@
         throw new Error('Authentication required');
       }
       
-      const response = await fetch(`http://localhost:3000/api/bookings/${bookingId}`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/bookings/${bookingId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

@@ -73,7 +73,7 @@
         }
         
         // Make API request
-        const response = await fetch('http://localhost:3000/api/bookings', {
+        const response = await fetch('https://photo-showcase-api.vercel.app/api/bookings', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -141,7 +141,7 @@
         return;
       }
       
-      const response = await fetch(`http://localhost:3000/api/bookings/${bookingToCancel}`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/bookings/${bookingToCancel}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`

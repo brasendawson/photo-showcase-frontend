@@ -9,7 +9,7 @@
   let isLoading = true;
   
   // API base URL with correct port
-  const API_BASE_URL = 'http://localhost:3000/api';
+  const API_BASE_URL = 'https://photo-showcase-api.vercel.app/api';
   
   // Helper function to get social media icon class
   function getSocialIconClass(platform) {

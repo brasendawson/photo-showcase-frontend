@@ -34,7 +34,7 @@
   async function fetchProfilePicture(token) {
     isLoadingProfilePicture = true;
     try {
-      const response = await fetch('http://localhost:3000/api/profile/picture', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/profile/picture', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

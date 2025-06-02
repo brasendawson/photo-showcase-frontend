@@ -56,7 +56,7 @@
     
     try {
       // Fetch featured photos from the API
-      const response = await fetch('http://localhost:3000/api/photos/gallery?featured=true&limit=4');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/photos/gallery?featured=true&limit=4');
       
       if (!response.ok) {
         throw new Error('Failed to load featured photos');

@@ -35,7 +35,7 @@
     try {
       // We're fetching FEATURED photos from the gallery API
       // This gets photos that the admin has marked as "featured"
-      const response = await fetch('http://localhost:3000/api/photos/gallery?featured=true');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/photos/gallery?featured=true');
       
       if (!response.ok) {
         throw new Error('Failed to load service images');
@@ -78,7 +78,7 @@
       // First fetch images to use with services
       serviceImages = await fetchServiceImages();
       
-      const response = await fetch('http://localhost:3000/api/services');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/services');
       
       if (!response.ok) {
         throw new Error('Failed to fetch services');

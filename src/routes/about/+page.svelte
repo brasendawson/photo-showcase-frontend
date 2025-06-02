@@ -10,7 +10,7 @@
   let error = null;
   
   // API base URL with correct port
-  const API_BASE_URL = 'http://localhost:3000/api';
+  const API_BASE_URL = 'https://photo-showcase-api.vercel.app/api';
 
   // Fetch complete about page data (about content, social media, contact info)
   async function fetchAboutData() {

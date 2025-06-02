@@ -14,7 +14,7 @@ export async function load({ fetch, url, depends }) {
   try {
     // Fetch services from the API directly - no need for proxy
     try {
-      const servicesResponse = await fetch('http://localhost:3000/api/services');
+      const servicesResponse = await fetch('https://photo-showcase-api.vercel.app/api/services');
       
       if (servicesResponse.ok) {
         const servicesData = await servicesResponse.json();

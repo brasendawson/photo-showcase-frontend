@@ -83,7 +83,7 @@
     isLoading.available = true;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/bookings/available', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/bookings/available', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -120,7 +120,7 @@
     isLoading.assigned = true;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/bookings/photographer', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/bookings/photographer', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -155,7 +155,7 @@
   // Fetch all services (to display service names)
   async function fetchServices() {
     try {
-      const response = await fetch('http://localhost:3000/api/services');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/services');
       
       if (!response.ok) {
         throw new Error('Failed to fetch services');
@@ -180,7 +180,7 @@
       const token = localStorage.getItem('token');
       
       // Make the API call to accept the booking
-      const response = await fetch(`http://localhost:3000/api/bookings/${selectedBooking.id}/accept`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/bookings/${selectedBooking.id}/accept`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

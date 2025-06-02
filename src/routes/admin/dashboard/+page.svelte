@@ -214,7 +214,7 @@
     isLoading.bookings = true;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/bookings/all', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/bookings/all', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -261,7 +261,7 @@
   async function fetchServices() {
     isLoading.services = true;
     try {
-      const response = await fetch('http://localhost:3000/api/services');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/services');
       
       if (!response.ok) {
         throw new Error('Failed to fetch services');
@@ -281,7 +281,7 @@
   async function fetchPhotos() {
     isLoading.photos = true;
     try {
-      const response = await fetch('http://localhost:3000/api/photos/gallery');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/photos/gallery');
       
       if (!response.ok) {
         throw new Error('Failed to fetch photos');
@@ -325,7 +325,7 @@
       console.log('Sending photo data:', photoData);
       
       const response = await fetch(
-        isEditing ? `http://localhost:3000/api/photos/${photoForm.id}` : 'http://localhost:3000/api/photos', 
+        isEditing ? `https://photo-showcase-api.vercel.app/api/photos/${photoForm.id}` : 'https://photo-showcase-api.vercel.app/api/photos', 
         {
           method: isEditing ? 'PATCH' : 'POST',
           headers: {
@@ -375,7 +375,7 @@
   async function deletePhoto(id) {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/photos/${id}`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/photos/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -411,7 +411,7 @@
       const isEditing = !!serviceForm.id;
       
       const response = await fetch(
-        isEditing ? `http://localhost:3000/api/services/${serviceForm.id}` : 'http://localhost:3000/api/services', 
+        isEditing ? `https://photo-showcase-api.vercel.app/api/services/${serviceForm.id}` : 'https://photo-showcase-api.vercel.app/api/services', 
         {
           method: isEditing ? 'PATCH' : 'POST',
           headers: {
@@ -453,7 +453,7 @@
   async function deleteService(id) {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/services/${id}`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/services/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -492,7 +492,7 @@
       }
       
       // Make the actual API call to assign the photographer
-      const response = await fetch(`http://localhost:3000/api/bookings/${selectedBooking.id}/assign`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/bookings/${selectedBooking.id}/assign`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -543,7 +543,7 @@
   async function updateBookingStatus(booking, newStatus) {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/bookings/${booking.id}/status`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/bookings/${booking.id}/status`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
@@ -680,7 +680,7 @@
     try {
       // Use the complete endpoint to get all data
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/about/complete', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/about/complete', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -727,7 +727,7 @@
   // Individual fetch functions for about data
   async function fetchAboutContent() {
     const token = localStorage.getItem('token');
-    const response = await fetch('http://localhost:3000/api/about', {
+    const response = await fetch('https://photo-showcase-api.vercel.app/api/about', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -740,7 +740,7 @@
   
   async function fetchSocialMedia() {
     const token = localStorage.getItem('token');
-    const response = await fetch('http://localhost:3000/api/about/social', {
+    const response = await fetch('https://photo-showcase-api.vercel.app/api/about/social', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -756,7 +756,7 @@
   
   async function fetchContactInfo() {
     const token = localStorage.getItem('token');
-    const response = await fetch('http://localhost:3000/api/about/contact', {
+    const response = await fetch('https://photo-showcase-api.vercel.app/api/about/contact', {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -777,8 +777,8 @@
       const isEditing = !!aboutForm.id;
       
       const url = isEditing 
-        ? `http://localhost:3000/api/about/${aboutForm.id}`
-        : 'http://localhost:3000/api/about';
+        ? `https://photo-showcase-api.vercel.app/api/about/${aboutForm.id}`
+        : 'https://photo-showcase-api.vercel.app/api/about';
       
       const response = await fetch(url, {
         method: isEditing ? 'PATCH' : 'POST',
@@ -817,8 +817,8 @@
       const isEditing = !!contactForm.id;
       
       const url = isEditing 
-        ? `http://localhost:3000/api/about/contact/${contactForm.id}`
-        : 'http://localhost:3000/api/about/contact';
+        ? `https://photo-showcase-api.vercel.app/api/about/contact/${contactForm.id}`
+        : 'https://photo-showcase-api.vercel.app/api/about/contact';
       
       const response = await fetch(url, {
         method: isEditing ? 'PATCH' : 'POST',
@@ -859,8 +859,8 @@
       const isEditing = !!socialMediaForm.id;
       
       const url = isEditing 
-        ? `http://localhost:3000/api/about/social/${socialMediaForm.id}`
-        : 'http://localhost:3000/api/about/social';
+        ? `https://photo-showcase-api.vercel.app/api/about/social/${socialMediaForm.id}`
+        : 'https://photo-showcase-api.vercel.app/api/about/social';
       
       const response = await fetch(url, {
         method: isEditing ? 'PATCH' : 'POST',
@@ -905,7 +905,7 @@
   async function deleteSocialMedia(id) {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:3000/api/about/social/${id}`, {
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/about/social/${id}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -959,7 +959,7 @@
     isLoading.users = true;
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:3000/api/admin/users', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/admin/users', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -995,7 +995,7 @@
         return;
       }
       
-      const response = await fetch('http://localhost:3000/api/admin/users/role', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/admin/users/role', {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -1067,7 +1067,7 @@
     try {
       const token = localStorage.getItem('token');
       // Use the provided endpoint to get users
-      const response = await fetch('http://localhost:3000/api/admin/users', {
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/admin/users', {
         headers: {
           'Authorization': `Bearer ${token}`
         }

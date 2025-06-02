@@ -34,7 +34,7 @@
   async function fetchFeaturedPhotos() {
     try {
       // Fetch featured photos for the slideshow
-      const response = await fetch('http://localhost:3000/api/photos/gallery?featured=true');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/photos/gallery?featured=true');
       
       if (!response.ok) {
         throw new Error('Failed to load featured photos');
@@ -160,7 +160,7 @@
         params.append('type', selectedCategory.toLowerCase());
       }
       
-      const response = await fetch(`http://localhost:3000/api/photos/gallery?${params}`);
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/photos/gallery?${params}`);
       
       if (!response.ok) {
         throw new Error('Failed to load gallery photos');
@@ -196,7 +196,7 @@
   // Fetch single photo for lightbox
   async function fetchSinglePhoto(id) {
     try {
-      const response = await fetch(`http://localhost:3000/api/photos/${id}`);
+      const response = await fetch(`https://photo-showcase-api.vercel.app/api/photos/${id}`);
       
       if (!response.ok) {
         throw new Error('Failed to load photo details');

@@ -30,7 +30,8 @@
   },
   "dependencies": {
     "lucide-svelte": "^0.511.0",
-    "svelte-5-french-toast": "^2.0.4"
+    "svelte-5-french-toast": "^2.0.4",
+    "vercel": "^42.3.0"
   },
   "description": "Everything you need to build a Svelte project, powered by [`sv`](https://github.com/sveltejs/cli).",
   "main": "postcss.config.js",
