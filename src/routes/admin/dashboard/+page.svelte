@@ -25,6 +25,12 @@
     users: true
   };
   
+  // Add missing file upload variables
+  let photoFile = null;
+  let previewUrl = null;
+  let uploadProgress = 0;
+  let isUploading = false;
+  
   // Data stores
   let bookings = [];
   let services = [];
@@ -297,72 +303,161 @@
     }
   }
   
-  // Create or update photo - modified to handle potential server errors
+  // Create or update photo - modified to handle file upload
   async function savePhoto() {
     try {
       const token = localStorage.getItem('token');
       const isEditing = !!photoForm.id;
       
       // Validate required fields
-      if (!photoForm.title || !photoForm.imageUrl || !photoForm.photographerName) {
+      if (!photoForm.title || (!photoForm.imageUrl && !photoFile) || !photoForm.photographerName) {
         toast.error('Please fill in all required fields');
         return;
       }
       
-      // Validate image URL format
-      try {
-        new URL(photoForm.imageUrl);
-      } catch (e) {
-        toast.error('Please enter a valid image URL');
-        return;
+      isUploading = true;
+      
+      // Create FormData object for file upload
+      const formData = new FormData();
+      formData.append('title', photoForm.title);
+      formData.append('description', photoForm.description || '');
+      formData.append('photographerName', photoForm.photographerName);
+      formData.append('type', photoForm.type);
+      formData.append('featured', photoForm.featured);
+      
+      // If editing and not changing the image, keep the existing imageUrl
+      if (isEditing && !photoFile && photoForm.imageUrl) {
+        formData.append('imageUrl', photoForm.imageUrl);
       }
       
-      // Prepare the request data, filtering out any null/undefined values
-      const photoData = Object.fromEntries(
-        Object.entries(photoForm).filter(([_, value]) => value !== null && value !== undefined)
-      );
+      // If there's a new file to upload, add it to the form data
+      if (photoFile) {
+        formData.append('image', photoFile);
+      }
       
-      console.log('Sending photo data:', photoData);
+      // Create the request
+      const xhr = new XMLHttpRequest();
       
-      const response = await fetch(
-        isEditing ? `https://photo-showcase-api.vercel.app/api/photos/${photoForm.id}` : 'https://photo-showcase-api.vercel.app/api/photos', 
-        {
-          method: isEditing ? 'PATCH' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(photoData)
+      // Set up progress tracking
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          uploadProgress = Math.round((event.loaded / event.total) * 100);
         }
-      );
+      });
       
-      // Handle different response status codes
-      if (response.status === 500) {
-        const errorText = await response.text();
-        console.error('Server error:', errorText);
-        throw new Error('Server error. The photo could not be saved.');
-      }
+      // Handle the response
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const response = JSON.parse(xhr.responseText);
+          
+          if (isEditing) {
+            photos = photos.map(p => p.id === photoForm.id ? response.photo : p);
+            toast.success('Photo updated successfully');
+          } else {
+            photos = [...photos, response.photo];
+            toast.success('Photo added successfully');
+          }
+          
+          resetPhotoForm();
+        } else {
+          let errorMessage = 'An error occurred during upload';
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            console.error('Could not parse error response', e);
+          }
+          toast.error(errorMessage);
+        }
+        
+        isUploading = false;
+        uploadProgress = 0;
+      };
       
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `Failed to ${isEditing ? 'update' : 'create'} photo`);
-      }
+      // Handle errors
+      xhr.onerror = function() {
+        toast.error('Network error during upload');
+        isUploading = false;
+        uploadProgress = 0;
+      };
       
-      const data = await response.json();
+      // Open and send the request
+      xhr.open(isEditing ? 'PATCH' : 'POST', 
+        isEditing ? `https://photo-showcase-api.vercel.app/api/photos/${photoForm.id}` : 'https://photo-showcase-api.vercel.app/api/photos', 
+        true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
       
-      if (isEditing) {
-        photos = photos.map(p => p.id === photoForm.id ? data.photo : p);
-        toast.success('Photo updated successfully');
-      } else {
-        photos = [...photos, data.photo];
-        toast.success('Photo added successfully');
-      }
-      
-      resetPhotoForm();
     } catch (error) {
       console.error('Error saving photo:', error);
       toast.error(error.message || 'An unexpected error occurred');
+      isUploading = false;
+      uploadProgress = 0;
     }
+  }
+  
+  // Function to handle file selection
+  function handleFileSelect(event) {
+    const file = event.target.files[0];
+    
+    if (!file) {
+      photoFile = null;
+      previewUrl = null;
+      return;
+    }
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please select a valid image file (JPEG, PNG, GIF, WEBP)');
+      event.target.value = '';
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Image must be less than 5MB');
+      event.target.value = '';
+      return;
+    }
+    
+    photoFile = file;
+    
+    // Create a preview URL
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    previewUrl = URL.createObjectURL(file);
+  }
+  
+  // Reset photo form with file handling
+  function resetPhotoForm() {
+    photoForm = {
+      id: null,
+      title: '',
+      description: '',
+      imageUrl: '',
+      photographerName: '',
+      type: 'portrait',
+      featured: false
+    };
+    
+    if (previewUrl) {
+      URL.revokeObjectURL(previewUrl);
+    }
+    
+    photoFile = null;
+    previewUrl = null;
+    showPhotoForm = false;
+  }
+  
+  // Open photo form for editing with preview
+  function editPhoto(photo) {
+    photoForm = { ...photo };
+    photoFile = null;
+    previewUrl = photo.imageUrl;
+    showPhotoForm = true;
   }
   
   // Update the delete photo function to use the modal instead of confirm
@@ -571,12 +666,6 @@
     }
   }
   
-  // Open photo form for editing
-  function editPhoto(photo) {
-    photoForm = { ...photo };
-    showPhotoForm = true;
-  }
-  
   // Open service form for editing
   function editService(service) {
     serviceForm = { ...service };
@@ -613,20 +702,6 @@
   function confirmDeleteSocialMedia(social) {
     socialMediaToDelete = social;
     showDeleteSocialMediaModal = true;
-  }
-  
-  // Reset photo form
-  function resetPhotoForm() {
-    photoForm = {
-      id: null,
-      title: '',
-      description: '',
-      imageUrl: '',
-      photographerName: '',
-      type: 'portrait',
-      featured: false
-    };
-    showPhotoForm = false;
   }
   
   // Reset service form
@@ -1106,9 +1181,23 @@
 <svelte:head>
   <title>Admin Dashboard | Capture Moments Photography</title>
   <meta name="description" content="Admin dashboard for managing photos, services, and bookings">
+  <style>
+    /* Fix for transparent navbar - ensure it's transparent only on the home page */
+    :global(body:not(.home-page) .site-header) {
+      background-color: rgba(0, 0, 0, 0.8) !important;
+      position: fixed;
+      width: 100%;
+      z-index: 50;
+    }
+    
+    /* Additional style to ensure the admin dashboard content doesn't overlap with the navbar */
+    :global(.admin-dashboard-content) {
+      padding-top: 5rem;
+    }
+  </style>
 </svelte:head>
 
-<section class="pt-32 pb-20 bg-bg-light min-h-screen">
+<section class="pt-32 pb-20 bg-bg-light min-h-screen admin-dashboard-content">
   <div class="max-w-7xl mx-auto px-4">
     <div class="flex justify-between items-center mb-8">
       <h1 class="text-4xl font-bold text-text-dark">Admin Dashboard</h1>
@@ -1659,17 +1748,57 @@
           ></textarea>
         </div>
         
+        <!-- Replace URL input with file upload input -->
         <div>
-          <label for="imageUrl" class="block text-sm font-medium text-gray-700 mb-1">Image URL <span class="text-red-500">*</span></label>
+          <label for="photoUpload" class="block text-sm font-medium text-gray-700 mb-1">Photo Upload <span class="text-red-500">*</span></label>
           <input 
-            type="url" 
-            id="imageUrl" 
-            bind:value={photoForm.imageUrl} 
-            required
-            placeholder="https://example.com/your-image.jpg"
-            class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary"
+            type="file" 
+            id="photoUpload" 
+            accept="image/*"
+            on:change={handleFileSelect}
+            class="hidden"
           />
-          <p class="text-xs text-gray-500 mt-1">Enter a direct URL to an image (must start with http:// or https://)</p>
+          
+          <!-- Custom file upload button -->
+          <div class="w-full mb-2">
+            <label for="photoUpload" class="cursor-pointer w-full px-4 py-2 border border-gray-300 rounded-md flex justify-center items-center bg-gray-50 hover:bg-gray-100 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span class="text-gray-700">{photoFile ? 'Change Image' : 'Select Image'}</span>
+            </label>
+          </div>
+          
+          <!-- Image preview -->
+          {#if previewUrl}
+            <div class="mt-2 relative">
+              <img src={previewUrl} alt="Preview" class="w-full h-48 object-contain border rounded-md">
+              <button 
+                type="button" 
+                class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                on:click={() => {
+                  URL.revokeObjectURL(previewUrl);
+                  previewUrl = null;
+                  photoFile = null;
+                }}
+                aria-label="Remove image"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          {:else}
+            <p class="text-xs text-gray-500 mt-1">Select an image file (JPG, PNG, GIF, WebP) up to 5MB</p>
+          {/if}
+          
+          <!-- Upload progress bar -->
+          {#if isUploading}
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+              <div class="bg-primary h-2.5 rounded-full" style="width: {uploadProgress}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 text-center mt-1">Uploading: {uploadProgress}%</p>
+          {/if}
         </div>
         
         <div>
@@ -1718,8 +1847,9 @@
           <button 
             type="submit"
             class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+            disabled={isUploading || (!photoFile && !photoForm.imageUrl)}
           >
-            {photoForm.id ? 'Update' : 'Add'} Photo
+            {isUploading ? 'Uploading...' : (photoForm.id ? 'Update' : 'Add')} Photo
           </button>
         </div>
       </form>

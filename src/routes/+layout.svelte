@@ -55,6 +55,17 @@
   }
 
   let { children } = $props();
+
+  // Use effect rune instead of reactive statement for home page class
+  $effect(() => {
+    if (typeof document !== 'undefined') {
+      if ($page.url.pathname === '/') {
+        document.body.classList.add('home-page');
+      } else {
+        document.body.classList.remove('home-page');
+      }
+    }
+  });
 </script>
 
 <svelte:head>
