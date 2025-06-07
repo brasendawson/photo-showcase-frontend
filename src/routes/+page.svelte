@@ -55,7 +55,7 @@
     previewError = null;
     
     try {
-      // Fetch featured photos from the API
+      // Fetch only featured photos from the API - limit to exactly 4
       const response = await fetch('https://photo-showcase-api.vercel.app/api/photos/gallery?featured=true&limit=4');
       
       if (!response.ok) {
@@ -64,56 +64,50 @@
       
       const data = await response.json();
       
-      // If we have featured photos, use them for the preview
+      // Only use photos that were actually uploaded by admin (will have valid imageUrl)
       if (data.photos && data.photos.length > 0) {
-        // Map API response to our gallery preview format
-        galleryPreview = data.photos.map(photo => ({
-          id: photo.id,
-          src: photo.imageUrl,
-          alt: photo.title,
-          category: photo.type ? photo.type.charAt(0).toUpperCase() + photo.type.slice(1) : 'Other'
-        }));
+        // Filter out any photos without proper imageUrl
+        const validPhotos = data.photos.filter(photo => 
+          photo.imageUrl && 
+          typeof photo.imageUrl === 'string' && 
+          photo.imageUrl.trim() !== ''
+        );
         
-        // If we have fewer than 4 photos, fill with defaults
-        if (galleryPreview.length < 4) {
-          const defaultPreviews = [
-            { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
-            { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
-            { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
-            { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
-          ];
+        if (validPhotos.length > 0) {
+          // Map API response to our gallery preview format
+          galleryPreview = validPhotos.slice(0, 4).map(photo => ({
+            id: photo.id,
+            src: photo.imageUrl,
+            alt: photo.title || 'Gallery photo',
+            category: photo.type ? photo.type.charAt(0).toUpperCase() + photo.type.slice(1) : 'Other'
+          }));
           
-          // Add default images to fill up to 4
-          for (let i = galleryPreview.length; i < 4; i++) {
-            galleryPreview.push(defaultPreviews[i]);
-          }
+          console.log(`Showing ${galleryPreview.length} featured photos from admin uploads`);
+          return; // Exit early since we have valid photos
         }
-        
-        // Limit to exactly 4 photos
-        galleryPreview = galleryPreview.slice(0, 4);
-      } else {
-        // Use default images if no featured photos
-        galleryPreview = [
-          { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
-          { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
-          { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
-          { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
-        ];
       }
+      
+      // If we reach here, there were no valid featured photos, use fallbacks
+      console.log('No featured photos found, using default images');
+      useDefaultImages();
+      
     } catch (err) {
       console.error('Error fetching featured preview:', err);
       previewError = err.message;
-      
-      // Fall back to default images
-      galleryPreview = [
-        { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
-        { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
-        { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
-        { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
-      ];
+      useDefaultImages();
     } finally {
       isLoadingPreview = false;
     }
+  }
+  
+  // Helper function to use default images when no featured photos are available
+  function useDefaultImages() {
+    galleryPreview = [
+      { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
+      { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
+      { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
+      { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
+    ];
   }
   
   let currentTestimonialIndex = 0;
@@ -216,8 +210,15 @@
           Try Again
         </button>
       </div>
+    {:else if galleryPreview.length === 0}
+      <div class="text-center py-8 mb-8">
+        <p class="text-text-muted mb-4">No featured photos available at the moment</p>
+        <a href="/gallery" class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark">
+          View Full Gallery
+        </a>
+      </div>
     {:else}
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-{Math.min(galleryPreview.length, 4)} gap-6 mb-12">
         {#each galleryPreview as image, i}
           <div class="relative overflow-hidden rounded-lg h-[300px] group">
             <img src={image.src} alt={image.alt} loading="lazy" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
