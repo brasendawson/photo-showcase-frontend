@@ -56,7 +56,7 @@
     
     try {
       // Fetch only featured photos from the API - limit to exactly 4
-      const response = await fetch('https://photo-showcase-api.vercel.app/api/photos/gallery?featured=true&limit=4');
+      const response = await fetch('https://photo-showcase-api.vercel.app/api/photos/gallery?featured=true&limit=8');
       
       if (!response.ok) {
         throw new Error('Failed to load featured photos');
@@ -66,11 +66,13 @@
       
       // Only use photos that were actually uploaded by admin (will have valid imageUrl)
       if (data.photos && data.photos.length > 0) {
-        // Filter out any photos without proper imageUrl
+        // Filter out any photos without proper imageUrl and exclude "other" type
         const validPhotos = data.photos.filter(photo => 
           photo.imageUrl && 
           typeof photo.imageUrl === 'string' && 
-          photo.imageUrl.trim() !== ''
+          photo.imageUrl.trim() !== '' &&
+          photo.type && 
+          photo.type.toLowerCase() !== 'other' // Exclude "other" type photos
         );
         
         if (validPhotos.length > 0) {
@@ -82,11 +84,11 @@
             category: photo.type ? photo.type.charAt(0).toUpperCase() + photo.type.slice(1) : 'Other'
           }));
           
-          console.log(`Showing ${galleryPreview.length} featured photos from admin uploads`);
+          console.log(`Showing ${galleryPreview.length} featured photos from admin uploads (excluding "other" type)`);
         } else {
           // Empty array if no valid photos found
           galleryPreview = [];
-          console.log('No valid featured photos found');
+          console.log('No valid featured photos found (after filtering out "other" type)');
         }
       } else {
         // Empty array if no photos returned from API
