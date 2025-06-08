@@ -1311,7 +1311,15 @@
       <!-- Bookings Tab -->
       {#if activeTab === 'bookings'}
         <div class="p-6">
-          <h2 class="text-2xl font-bold text-text-dark mb-4">Manage Bookings</h2>
+          <div class="flex justify-between items-center mb-4">
+            <h2 class="text-2xl font-bold text-text-dark">Manage Bookings</h2>
+            <button 
+              on:click={fetchBookings}
+              class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors flex items-center"
+            >
+              <i class="fas fa-sync-alt mr-2"></i> Refresh
+            </button>
+          </div>
           
           {#if isLoading.bookings}
             <div class="flex justify-center py-12">
