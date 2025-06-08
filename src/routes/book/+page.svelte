@@ -294,7 +294,7 @@
             <option value="" disabled selected>Select a service type</option>
             {#if data.services && data.services.length > 0}
               {#each data.services as service}
-                <option value={service.id}>{service.name} - ${service.price} ({service.duration})</option>
+                <option value={service.id}>{service.name} - GH₵{parseFloat(service.price).toFixed(2)} ({service.duration})</option>
               {/each}
             {:else}
               <option value="" disabled>No services available</option>
