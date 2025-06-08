@@ -2446,3 +2446,57 @@
     </div>
   </div>
 {/if}
+
+<!-- Delete Photo Confirmation Modal -->
+{#if showDeletePhotoModal && photoToDelete}
+  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
+      <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Delete Photo</h3>
+      
+      <div class="mb-6">
+        <p class="mb-4">Are you sure you want to delete this photo?</p>
+        
+        <div class="bg-gray-50 p-4 rounded-md mb-4">
+          <div class="space-y-2">
+            <!-- Photo image preview -->
+            {#if photoToDelete.imageUrl}
+              <img 
+                src={photoToDelete.imageUrl} 
+                alt={photoToDelete.title} 
+                class="w-full h-40 object-cover rounded-md mb-2"
+              />
+            {/if}
+            <h4 class="font-medium text-gray-900 text-lg">{photoToDelete.title}</h4>
+            <div class="flex items-center justify-between">
+              <p class="text-gray-600 text-sm">By: {photoToDelete.photographerName}</p>
+              {#if photoToDelete.featured}
+                <span class="px-2 py-1 rounded-full text-xs font-semibold bg-yellow-100 text-yellow-800">
+                  Featured
+                </span>
+              {/if}
+            </div>
+            <p class="text-gray-500 text-sm">{photoToDelete.description}</p>
+          </div>
+        </div>
+        
+        <p class="text-sm text-red-600">This action cannot be undone.</p>
+      </div>
+      
+      <div class="flex justify-end space-x-3">
+        <button 
+          type="button"
+          on:click={cancelDeletePhoto}
+          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          on:click={() => deletePhoto(photoToDelete.id)}
+          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
+        >
+          Delete Photo
+        </button>
+      </div>
+    </div>
+  </div>
+{/if}
