@@ -59,7 +59,7 @@
               duration: service.duration,
               features: [
                 `Duration: ${service.duration || 'Flexible'}`,
-                `Price: ${typeof service.price === 'number' ? `GH₵${service.price.toFixed(2)}` : service.price || 'Contact for pricing'}`,
+                `Price: ${service.price ? `GH₵${parseFloat(service.price).toFixed(2)}` : 'Contact for pricing'}`,
                 "Professional equipment & editing",
                 "High-resolution digital files",
                 "Online gallery delivery"

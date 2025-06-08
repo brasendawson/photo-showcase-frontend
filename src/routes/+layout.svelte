@@ -10,7 +10,6 @@
   import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
   
 injectSpeedInsights();
-
   // Create stores within regular script tag
   export const user = writable(null);
   export const isAuthenticated = writable(false);
