@@ -788,6 +788,42 @@
     showServiceForm = false;
   }
   
+  // Function to handle service file selection
+  function handleServiceFileSelect(event) {
+    const file = event.target.files[0];
+    
+    if (!file) {
+      serviceFile = null;
+      servicePreviewUrl = null;
+      return;
+    }
+    
+    // Validate file type
+    const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!validTypes.includes(file.type)) {
+      toast.error('Please select a valid image file (JPEG, PNG, GIF, WEBP)');
+      event.target.value = '';
+      return;
+    }
+    
+    // Validate file size (max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      toast.error('Image must be less than 5MB');
+      event.target.value = '';
+      return;
+    }
+    
+    serviceFile = file;
+    
+    // Create a preview URL
+    if (servicePreviewUrl) {
+      URL.revokeObjectURL(servicePreviewUrl);
+    }
+    servicePreviewUrl = URL.createObjectURL(file);
+  }
+  
+  // Reset social media form
   function resetSocialMediaForm() {
     socialMediaForm = {
       id: null,
