@@ -96,52 +96,22 @@
     }
   }
   
-  // Helper function to set up the default slideshow with one image per type
+  // Helper function to set up the default slideshow - updated to avoid using placeholder images
   function useDefaultSlideshow() {
-    slideshowImages = [
-      {
-        src: "https://source.unsplash.com/random/1920x800?portrait",
-        alt: "Portrait Photography",
-        title: "Portrait Sessions",
-        type: "portrait",
-        subtitle: "Professional portraits that showcase your personality"
-      },
-      {
-        src: "https://source.unsplash.com/random/1920x800?wedding",
-        alt: "Wedding Photography",
-        title: "Wedding Moments",
-        type: "wedding",
-        subtitle: "Capturing the most special day of your life"
-      },
-      {
-        src: "https://source.unsplash.com/random/1920x800?event",
-        alt: "Event Photography",
-        title: "Event Coverage",
-        type: "event",
-        subtitle: "Documenting your special occasions"
-      },
-      {
-        src: "https://source.unsplash.com/random/1920x800?commercial",
-        alt: "Commercial Photography",
-        title: "Commercial Photography",
-        type: "commercial",
-        subtitle: "Elevate your brand with professional imagery"
-      },
-      {
-        src: "https://source.unsplash.com/random/1920x800?landscape",
-        alt: "Landscape Photography",
-        title: "Nature & Landscapes",
-        type: "landscape",
-        subtitle: "Breathtaking scenes from around the world"
-      },
-      {
-        src: "https://source.unsplash.com/random/1920x800?family",
-        alt: "Family Photography",
-        title: "Family Portraits",
-        type: "family",
-        subtitle: "Preserving precious family moments forever"
-      }
-    ];
+    // Instead of using placeholder images, leave slideshow empty
+    slideshowImages = [];
+    
+    // Show a message to the admin that no featured photos are available
+    console.warn('No featured photos available for slideshow. Please add featured photos in the admin dashboard.');
+    
+    // Add a single default slide with a message instead of random images
+    slideshowImages = [{
+      src: "", // No image source
+      alt: "No featured photos available",
+      title: "Our Photography Portfolio",
+      type: "default",
+      subtitle: "Explore our gallery below"
+    }];
   }
 
   // Fetch photos from API
