@@ -31,6 +31,12 @@
   let uploadProgress = 0;
   let isUploading = false;
   
+  // Add service image upload variables
+  let serviceFile = null;
+  let servicePreviewUrl = null;
+  let serviceUploadProgress = 0;
+  let isServiceUploading = false;
+  
   // Data stores
   let bookings = [];
   let services = [];
@@ -58,6 +64,7 @@
     description: '',
     price: '',
     duration: '',
+    imageUrl: '',
     isActive: true
   };
   
@@ -499,42 +506,96 @@
     photoToDelete = null;
   }
   
-  // Create or update service
+  // Create or update service - Updated to handle file upload
   async function saveService() {
     try {
       const token = localStorage.getItem('token');
       const isEditing = !!serviceForm.id;
       
-      const response = await fetch(
-        isEditing ? `https://photo-showcase-api.vercel.app/api/services/${serviceForm.id}` : 'https://photo-showcase-api.vercel.app/api/services', 
-        {
-          method: isEditing ? 'PATCH' : 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`
-          },
-          body: JSON.stringify(serviceForm)
+      // Validate required fields
+      if (!serviceForm.name || !serviceForm.price || !serviceForm.duration) {
+        toast.error('Please fill in all required fields');
+        return;
+      }
+      
+      isServiceUploading = true;
+      
+      // Create FormData object for file upload
+      const formData = new FormData();
+      formData.append('name', serviceForm.name);
+      formData.append('description', serviceForm.description || '');
+      formData.append('price', serviceForm.price);
+      formData.append('duration', serviceForm.duration);
+      formData.append('isActive', serviceForm.isActive);
+      
+      // If editing and not changing the image, keep the existing imageUrl
+      if (isEditing && !serviceFile && serviceForm.imageUrl) {
+        formData.append('imageUrl', serviceForm.imageUrl);
+      }
+      
+      // If there's a new file to upload, add it to the form data
+      if (serviceFile) {
+        formData.append('image', serviceFile);
+      }
+      
+      // Create the request
+      const xhr = new XMLHttpRequest();
+      
+      // Set up progress tracking
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          serviceUploadProgress = Math.round((event.loaded / event.total) * 100);
         }
-      );
+      });
       
-      if (!response.ok) {
-        throw new Error(`Failed to ${isEditing ? 'update' : 'create'} service`);
-      }
+      // Handle the response
+      xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          const response = JSON.parse(xhr.responseText);
+          
+          if (isEditing) {
+            services = services.map(s => s.id === serviceForm.id ? response.service : s);
+            toast.success('Service updated successfully');
+          } else {
+            services = [...services, response.service];
+            toast.success('Service added successfully');
+          }
+          
+          resetServiceForm();
+        } else {
+          let errorMessage = 'An error occurred during upload';
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            errorMessage = errorData.message || errorMessage;
+          } catch (e) {
+            console.error('Could not parse error response', e);
+          }
+          toast.error(errorMessage);
+        }
+        
+        isServiceUploading = false;
+        serviceUploadProgress = 0;
+      };
       
-      const data = await response.json();
+      // Handle errors
+      xhr.onerror = function() {
+        toast.error('Network error during upload');
+        isServiceUploading = false;
+        serviceUploadProgress = 0;
+      };
       
-      if (isEditing) {
-        services = services.map(s => s.id === serviceForm.id ? data.service : s);
-        toast.success('Service updated successfully');
-      } else {
-        services = [...services, data.service];
-        toast.success('Service added successfully');
-      }
+      // Open and send the request
+      xhr.open(isEditing ? 'PATCH' : 'POST', 
+        isEditing ? `https://photo-showcase-api.vercel.app/api/services/${serviceForm.id}` : 'https://photo-showcase-api.vercel.app/api/services', 
+        true);
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      xhr.send(formData);
       
-      resetServiceForm();
     } catch (error) {
       console.error('Error saving service:', error);
-      toast.error(error.message);
+      toast.error(error.message || 'An unexpected error occurred');
+      isServiceUploading = false;
+      serviceUploadProgress = 0;
     }
   }
   
@@ -666,9 +727,11 @@
     }
   }
   
-  // Open service form for editing
+  // Open service form for editing - Updated to include image preview
   function editService(service) {
     serviceForm = { ...service };
+    serviceFile = null;
+    servicePreviewUrl = service.imageUrl;
     showServiceForm = true;
   }
   
@@ -712,6 +775,7 @@
       description: '',
       price: '',
       duration: '',
+      imageUrl: '',
       isActive: true
     };
     showServiceForm = false;
@@ -1383,12 +1447,30 @@
           {:else}
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {#each services as service}
-                <div class="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow">
+                <div class="bg-white border rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow relative">
+                  <!-- Service active/inactive indicator -->
+                  <div class="absolute top-3 right-3 z-10">
+                    <span class={`px-2 py-1 rounded-full text-xs font-semibold ${service.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      {service.isActive ? 'Active' : 'Inactive'}
+                    </span>
+                  </div>
+                  
+                  <!-- Service image -->
+                  <div class="h-48 bg-gray-100">
+                    {#if service.imageUrl}
+                      <img src={service.imageUrl} alt={service.name} class="w-full h-full object-cover">
+                    {:else}
+                      <div class="w-full h-full flex items-center justify-center text-gray-400">
+                        <i class="fas fa-camera text-5xl"></i>
+                      </div>
+                    {/if}
+                  </div>
+                  
                   <div class="p-6">
                     <h3 class="text-xl font-bold text-text-dark mb-2">{service.name}</h3>
                     <p class="text-3xl font-bold text-primary mb-1">{formatCurrency(service.price)}</p>
                     <p class="text-text-light italic mb-4">{service.duration}</p>
-                    <p class="text-text-muted mb-6">{service.description}</p>
+                    <p class="text-text-muted mb-6 line-clamp-3">{service.description}</p>
                     
                     <div class="flex justify-between">
                       <button 
@@ -1867,7 +1949,7 @@
       
       <form on:submit|preventDefault={saveService} class="space-y-4">
         <div>
-          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+          <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Service Name <span class="text-red-500">*</span></label>
           <input 
             type="text" 
             id="name" 
@@ -1887,8 +1969,61 @@
           ></textarea>
         </div>
         
+        <!-- Service image upload -->
         <div>
-          <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+          <label for="serviceUpload" class="block text-sm font-medium text-gray-700 mb-1">Service Image</label>
+          <input 
+            type="file" 
+            id="serviceUpload" 
+            accept="image/*"
+            on:change={handleServiceFileSelect}
+            class="hidden"
+          />
+          
+          <!-- Custom file upload button -->
+          <div class="w-full mb-2">
+            <label for="serviceUpload" class="cursor-pointer w-full px-4 py-2 border border-gray-300 rounded-md flex justify-center items-center bg-gray-50 hover:bg-gray-100 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span class="text-gray-700">{serviceFile ? 'Change Image' : 'Select Service Image'}</span>
+            </label>
+          </div>
+          
+          <!-- Image preview -->
+          {#if servicePreviewUrl}
+            <div class="mt-2 relative">
+              <img src={servicePreviewUrl} alt="Preview" class="w-full h-48 object-contain border rounded-md">
+              <button 
+                type="button" 
+                class="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 transition-colors"
+                on:click={() => {
+                  URL.revokeObjectURL(servicePreviewUrl);
+                  servicePreviewUrl = null;
+                  serviceFile = null;
+                }}
+                aria-label="Remove image"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          {:else}
+            <p class="text-xs text-gray-500 mt-1">Select an image file (JPG, PNG, GIF, WebP) up to 5MB</p>
+          {/if}
+          
+          <!-- Upload progress bar -->
+          {#if isServiceUploading}
+            <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+              <div class="bg-primary h-2.5 rounded-full" style="width: {serviceUploadProgress}%"></div>
+            </div>
+            <p class="text-xs text-gray-500 text-center mt-1">Uploading: {serviceUploadProgress}%</p>
+          {/if}
+        </div>
+        
+        <div>
+          <label for="price" class="block text-sm font-medium text-gray-700 mb-1">Price <span class="text-red-500">*</span></label>
           <input 
             type="number" 
             id="price" 
@@ -1901,7 +2036,7 @@
         </div>
         
         <div>
-          <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">Duration</label>
+          <label for="duration" class="block text-sm font-medium text-gray-700 mb-1">Duration <span class="text-red-500">*</span></label>
           <input 
             type="text" 
             id="duration" 
@@ -1933,121 +2068,12 @@
           <button 
             type="submit"
             class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
+            disabled={isServiceUploading}
           >
-            {serviceForm.id ? 'Update' : 'Add'} Service
+            {isServiceUploading ? 'Uploading...' : (serviceForm.id ? 'Update' : 'Add')} Service
           </button>
         </div>
       </form>
-    </div>
-  </div>
-{/if}
-<!-- Assign Photographer Modal -->
-{#if showAssignForm}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
-      <h3 class="text-xl font-bold text-gray-800 mb-4">Assign Photographer</h3>
-      
-      {#if selectedBooking}
-        <div class="mb-4 p-3 bg-gray-50 rounded-md">
-          <p class="text-sm text-gray-500">Booking for:</p>
-          <p class="font-medium">{selectedBooking.fullName}</p>
-          <p class="text-sm">{formatDate(selectedBooking.date)} at {selectedBooking.time}</p>
-          <p class="text-sm">Service: 
-            {#if selectedBooking.serviceName}
-              {selectedBooking.serviceName}
-            {:else if selectedBooking.serviceType}
-              {selectedBooking.serviceType}
-            {:else if selectedBooking.sessionType}
-              {selectedBooking.sessionType}
-            {:else if selectedBooking.service && selectedBooking.service.name}
-              {selectedBooking.service.name}
-            {:else if selectedBooking.serviceId}
-              Service #{selectedBooking.serviceId}
-            {:else}
-              Unknown service
-            {/if}
-          </p>
-        </div>
-      {/if}
-      
-      <div class="mb-6">
-        <label for="photographer" class="block text-sm font-medium text-gray-700 mb-1">Select Photographer</label>
-        <select 
-          id="photographer" 
-          bind:value={selectedPhotographer} 
-          class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-primary focus:border-primary bg-white"
-        >
-          <option value={null} disabled selected>-- Select a photographer --</option>
-          {#each photographers as photographer}
-            <option value={photographer.id}>{photographer.name}</option>
-          {/each}
-        </select>
-        {#if photographers.length === 0}
-          <p class="text-xs text-red-600 mt-1">Failed to load photographers. Please try again.</p>
-        {/if}
-      </div>
-      
-      <div class="flex justify-end space-x-3">
-        <button 
-          type="button"
-          on:click={() => { showAssignForm = false; selectedBooking = null; selectedPhotographer = null; }}
-          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-        >
-          Cancel
-        </button>
-        <button 
-          on:click={assignPhotographer}
-          class="px-4 py-2 bg-primary text-white rounded-md hover:bg-primary-dark transition-colors"
-          disabled={!selectedPhotographer}
-        >
-          Assign
-        </button>
-      </div>
-    </div>
-  </div>
-{/if}
-
-<!-- Delete Photo Confirmation Modal -->
-{#if showDeletePhotoModal && photoToDelete}
-  <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-    <div class="bg-white rounded-lg shadow-xl w-full max-w-md mx-4 p-6">
-      <h3 class="text-xl font-bold text-gray-800 mb-4">Confirm Delete</h3>
-      
-      <div class="mb-6">
-        <p class="mb-4">Are you sure you want to delete this photo?</p>
-        
-        <div class="bg-gray-50 p-4 rounded-md mb-4">
-          <div class="flex items-center space-x-4">
-            <img 
-              src={photoToDelete.imageUrl} 
-              alt={photoToDelete.title} 
-              class="w-20 h-20 object-cover rounded-md"
-            />
-            <div>
-              <h4 class="font-medium text-gray-900">{photoToDelete.title}</h4>
-              <p class="text-sm text-gray-500">By {photoToDelete.photographerName}</p>
-            </div>
-          </div>
-        </div>
-        
-        <p class="text-sm text-red-600">This action cannot be undone.</p>
-      </div>
-      
-      <div class="flex justify-end space-x-3">
-        <button 
-          type="button"
-          on:click={cancelDeletePhoto}
-          class="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 transition-colors"
-        >
-          Cancel
-        </button>
-        <button 
-          on:click={() => deletePhoto(photoToDelete.id)}
-          class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors"
-        >
-          Delete Photo
-        </button>
-      </div>
     </div>
   </div>
 {/if}
@@ -2063,8 +2089,21 @@
         
         <div class="bg-gray-50 p-4 rounded-md mb-4">
           <div class="space-y-2">
+            <!-- Service image preview -->
+            {#if serviceToDelete.imageUrl}
+              <img 
+                src={serviceToDelete.imageUrl} 
+                alt={serviceToDelete.name} 
+                class="w-full h-40 object-cover rounded-md mb-2"
+              />
+            {/if}
             <h4 class="font-medium text-gray-900 text-lg">{serviceToDelete.name}</h4>
-            <p class="text-primary font-bold">{formatCurrency(serviceToDelete.price)}</p>
+            <div class="flex items-center justify-between">
+              <p class="text-primary font-bold">{formatCurrency(serviceToDelete.price)}</p>
+              <span class={`px-2 py-1 rounded-full text-xs font-semibold ${serviceToDelete.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                {serviceToDelete.isActive ? 'Active' : 'Inactive'}
+              </span>
+            </div>
             <p class="text-gray-500 text-sm">{serviceToDelete.description}</p>
             <p class="text-gray-500 italic text-sm">Duration: {serviceToDelete.duration}</p>
           </div>

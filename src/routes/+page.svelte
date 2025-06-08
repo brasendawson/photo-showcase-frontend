@@ -83,31 +83,23 @@
           }));
           
           console.log(`Showing ${galleryPreview.length} featured photos from admin uploads`);
-          return; // Exit early since we have valid photos
+        } else {
+          // Empty array if no valid photos found
+          galleryPreview = [];
+          console.log('No valid featured photos found');
         }
+      } else {
+        // Empty array if no photos returned from API
+        galleryPreview = [];
+        console.log('No featured photos returned from API');
       }
-      
-      // If we reach here, there were no valid featured photos, use fallbacks
-      console.log('No featured photos found, using default images');
-      useDefaultImages();
-      
     } catch (err) {
       console.error('Error fetching featured preview:', err);
       previewError = err.message;
-      useDefaultImages();
+      galleryPreview = []; // Set to empty array instead of using fallbacks
     } finally {
       isLoadingPreview = false;
     }
-  }
-  
-  // Helper function to use default images when no featured photos are available
-  function useDefaultImages() {
-    galleryPreview = [
-      { src: "https://source.unsplash.com/random/600x400?wedding", alt: "Wedding Photography", category: "Wedding" },
-      { src: "https://source.unsplash.com/random/600x400?portrait", alt: "Portrait Photography", category: "Portrait" },
-      { src: "https://source.unsplash.com/random/600x400?family", alt: "Family Photography", category: "Family" },
-      { src: "https://source.unsplash.com/random/600x400?event", alt: "Event Photography", category: "Event" }
-    ];
   }
   
   let currentTestimonialIndex = 0;
@@ -211,8 +203,9 @@
         </button>
       </div>
     {:else if galleryPreview.length === 0}
-      <div class="text-center py-8 mb-8">
-        <p class="text-text-muted mb-4">No featured photos available at the moment</p>
+      <div class="text-center py-12 mb-8">
+        <p class="text-text-muted mb-4">No featured photos available yet.</p>
+        <p class="text-sm text-text-light mb-6">Our admin is working on adding some amazing featured photos. Check back soon!</p>
         <a href="/gallery" class="inline-block px-4 py-2 bg-primary text-white rounded hover:bg-primary-dark">
           View Full Gallery
         </a>
