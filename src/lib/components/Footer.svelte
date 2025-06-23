@@ -122,6 +122,6 @@
   </div>
   
   <div class="text-center pt-8 mt-8 border-t border-gray-800 text-gray-500 text-sm">
-    <p>&copy; {currentYear} Group 17. All rights reserved.</p>
+    <p>&copy; {currentYear} Brasen Dawson. All rights reserved.</p>
   </div>
 </footer>
